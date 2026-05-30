@@ -36,8 +36,27 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
+// ── Default / fallback data ──────────────────────────────────────────────────
+const defaultDashStats = {
+  trainingHours: 0,
+  leaveBalance: 0,
+  pendingRequests: 0,
+};
+
+const defaultMeetings = [];
+
+const defaultKeyContacts = [];
+
+const defaultRecentRequests = [];
+
+const defaultUpcomingTraining = [];
+
+const defaultNotifications = [];
+
+const defaultMyAssets = [];
+// ────────────────────────────────────────────────────────────────────────────
+
 const StatCard = ({ label, value, icon: Icon, colorClass, subtext, onClick }) => {
-  // Extract just the text color class from colorClass (remove bg- classes)
   const iconColor = colorClass.split(' ').find(c => c.startsWith('text-')) || colorClass;
 
   return (
@@ -45,7 +64,7 @@ const StatCard = ({ label, value, icon: Icon, colorClass, subtext, onClick }) =>
       onClick={onClick}
       className="bg-white p-5 rounded-[24px] shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group cursor-pointer w-full text-left active:scale-95"
     >
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform bg-gray-100`}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform bg-gray-100">
         {Icon && <Icon size={24} className={iconColor} />}
       </div>
       <h3 className="text-2xl font-bold text-[#1B254B] mb-1">{value}</h3>
@@ -120,25 +139,28 @@ const MyAssetsCard = ({ assets }) => (
   <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
     <h3 className="font-bold text-[#1B254B] mb-4 text-lg">My Assets</h3>
     <div className="space-y-3">
-      {assets.map((asset, idx) => (
-        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-100 p-2 rounded-lg text-[#0B4DA2]">
-              <asset.icon size={18} />
+      {assets.map((asset, idx) => {
+        const AssetIcon = asset.icon; // ← fix: store in a capitalised variable so React treats it as a component
+        return (
+          <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-lg text-[#0B4DA2]">
+                {AssetIcon ? <AssetIcon size={18} /> : null}
+              </div>
+              <div>
+                <p className="font-bold text-[#1B254B] text-sm">{asset.name}</p>
+                <p className="text-[10px] text-gray-400">{asset.type}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-[#1B254B] text-sm">{asset.name}</p>
-              <p className="text-[10px] text-gray-400">{asset.type}</p>
-            </div>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded ${asset.status === 'Excellent' ? 'bg-green-100 text-green-700' :
+              asset.status === 'Good' ? 'bg-blue-100 text-blue-700' :
+                'bg-yellow-100 text-yellow-700'
+              }`}>
+              {asset.status}
+            </span>
           </div>
-          <span className={`text-[10px] font-bold px-2 py-1 rounded ${asset.status === 'Excellent' ? 'bg-green-100 text-green-700' :
-            asset.status === 'Good' ? 'bg-blue-100 text-blue-700' :
-              'bg-yellow-100 text-yellow-700'
-            }`}>
-            {asset.status}
-          </span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   </div>
 );
@@ -214,6 +236,16 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
   const greeting = getGreeting();
   const [isClockedIn, setIsClockedIn] = useState(true);
 
+  // ── Resolve all data from props, falling back to safe defaults ─────────────
+  const dashStats        = data.stats           || defaultDashStats;
+  const meetings         = data.meetings         || defaultMeetings;
+  const keyContacts      = data.keyContacts      || defaultKeyContacts;
+  const recentRequests   = data.recentRequests   || defaultRecentRequests;
+  const upcomingTraining = data.upcomingTraining || defaultUpcomingTraining;
+  const notifications    = data.notifications    || defaultNotifications;
+  const myAssets         = data.myAssets         || defaultMyAssets;
+  // ──────────────────────────────────────────────────────────────────────────
+
   const handleClockIn = () => {
     const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     alert(`Clocked In at ${currentTime}`);
@@ -230,13 +262,11 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gradient-to-br from-[#042A5B] via-[#063A75] to-[#0B4DA2] rounded-[30px] p-8 text-white shadow-xl shadow-blue-900/30 relative overflow-hidden flex flex-col justify-center min-h-[220px] group">
-          {/* Animated Background Elements */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute bottom-10 right-20 w-40 h-40 bg-[#87CEEB] rounded-full blur-3xl animate-pulse delay-700"></div>
           </div>
 
-          {/* Decorative Lines */}
           <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
             <div className="absolute top-8 right-8 w-32 h-0.5 bg-white rotate-45"></div>
             <div className="absolute top-8 right-44 w-24 h-0.5 bg-white rotate-45"></div>
@@ -245,7 +275,6 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
 
           <div className="relative z-10">
             <div className="flex items-start justify-between mb-4 gap-6">
-              {/* Profile Photo */}
               <div className="shrink-0 animate-in slide-in-from-left duration-500">
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white/20 shadow-2xl">
                   <img
@@ -279,7 +308,6 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
                 </div>
               </div>
 
-              {/* Stats Mini Cards */}
               <div className="hidden md:flex flex-row gap-2 animate-in slide-in-from-right duration-700">
                 <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-center min-w-[120px]">
                   <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wide">This Month</p>
@@ -297,7 +325,6 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 animate-in slide-in-from-bottom duration-700 hover:bg-white/15 transition-all mt-2">
               <div className="flex flex-col sm:flex-row items-start gap-4">
                 <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
-                  {/* Left Column */}
                   <div className="space-y-1.5">
                     <div>
                       <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wide mb-0.5">Employee ID</p>
@@ -313,7 +340,6 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
                     </div>
                   </div>
 
-                  {/* Right Column */}
                   <div className="space-y-1.5">
                     <div>
                       <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wide mb-0.5">Email</p>
@@ -333,12 +359,10 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
             </div>
           </div>
 
-          {/* Enhanced Background Icon */}
           <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none transform translate-x-12 translate-y-12 group-hover:scale-110 transition-transform duration-700">
             <Briefcase size={240} strokeWidth={1} />
           </div>
 
-          {/* Floating Particles */}
           <div className="absolute top-1/4 right-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping"></div>
           <div className="absolute top-1/3 left-1/4 w-1.5 h-1.5 bg-[#87CEEB]/40 rounded-full animate-ping delay-500"></div>
           <div className="absolute bottom-1/4 right-1/3 w-1 h-1 bg-white/40 rounded-full animate-ping delay-1000"></div>
@@ -356,103 +380,36 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
             </button>
           </div>
 
-          {/* Donut Chart */}
           <div className="flex justify-center mb-6">
             <div className="relative w-32 h-32">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                {/* Background circle */}
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="12" />
-
-                {/* General Leave - Dark Blue (40%) */}
-                <circle
-                  cx="50" cy="50" r="40"
-                  fill="none"
-                  stroke="#042A5B"
-                  strokeWidth="12"
-                  strokeDasharray="100.53 251.33"
-                  strokeDashoffset="0"
-                />
-
-                {/* Medical Leave - Medium Blue (10%) */}
-                <circle
-                  cx="50" cy="50" r="40"
-                  fill="none"
-                  stroke="#0B4DA2"
-                  strokeWidth="12"
-                  strokeDasharray="25.13 251.33"
-                  strokeDashoffset="-100.53"
-                />
-
-                {/* Work From Home - Light Blue (40%) */}
-                <circle
-                  cx="50" cy="50" r="40"
-                  fill="none"
-                  stroke="#87CEEB"
-                  strokeWidth="12"
-                  strokeDasharray="100.53 251.33"
-                  strokeDashoffset="-125.66"
-                />
-
-                {/* Half-Day Leave - Lightest Blue (40%) */}
-                <circle
-                  cx="50" cy="50" r="40"
-                  fill="none"
-                  stroke="#5DADE2"
-                  strokeWidth="12"
-                  strokeDasharray="100.53 251.33"
-                  strokeDashoffset="-226.19"
-                />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#042A5B" strokeWidth="12" strokeDasharray="100.53 251.33" strokeDashoffset="0" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#0B4DA2" strokeWidth="12" strokeDasharray="25.13 251.33" strokeDashoffset="-100.53" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#87CEEB" strokeWidth="12" strokeDasharray="100.53 251.33" strokeDashoffset="-125.66" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#5DADE2" strokeWidth="12" strokeDasharray="100.53 251.33" strokeDashoffset="-226.19" />
               </svg>
             </div>
           </div>
 
-          {/* Used Leaves */}
           <div className="space-y-3">
             <h4 className="text-sm font-bold text-gray-600 mb-3">Used leaves</h4>
-
-            {/* General Leave */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-medium text-gray-600">General Leave</span>
-                <span className="text-xs font-bold text-gray-800">4 of 10</span>
+            {[
+              { label: 'General Leave', used: 4, total: 10, color: '#042A5B', pct: '40%' },
+              { label: 'Medical Leave', used: 1, total: 10, color: '#0B4DA2', pct: '10%' },
+              { label: 'Work From Home', used: 4, total: 10, color: '#87CEEB', pct: '40%' },
+              { label: 'Half-Day Leave', used: 4, total: 10, color: '#5DADE2', pct: '40%' },
+            ].map((item) => (
+              <div key={item.label}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium text-gray-600">{item.label}</span>
+                  <span className="text-xs font-bold text-gray-800">{item.used} of {item.total}</span>
+                </div>
+                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: item.pct, backgroundColor: item.color }}></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#042A5B] h-full rounded-full" style={{ width: '40%' }}></div>
-              </div>
-            </div>
-
-            {/* Medical Leave */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-medium text-gray-600">Medical Leave</span>
-                <span className="text-xs font-bold text-gray-800">1 of 10</span>
-              </div>
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#0B4DA2] h-full rounded-full" style={{ width: '10%' }}></div>
-              </div>
-            </div>
-
-            {/* Work From Home */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-medium text-gray-600">Work From Home</span>
-                <span className="text-xs font-bold text-gray-800">4 of 10</span>
-              </div>
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#87CEEB] h-full rounded-full" style={{ width: '40%' }}></div>
-              </div>
-            </div>
-
-            {/* Half-Day Leave */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-medium text-gray-600">Half-Day Leave</span>
-                <span className="text-xs font-bold text-gray-800">4 of 10</span>
-              </div>
-              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#5DADE2] h-full rounded-full" style={{ width: '40%' }}></div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
