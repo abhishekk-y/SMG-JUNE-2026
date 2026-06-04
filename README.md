@@ -4,6 +4,7 @@
 ### 1. Abstract
 The SMG Employee Management Portal is an enterprise-grade, full-stack web application designed to centralize Human Resources operations, employee self-service facilities, and administrative tracking. Built upon the MERN stack (MongoDB, Express.js, React, Node.js), it orchestrates a secure, scalable architecture bridging the gap between employees, department managers, and system administrators.
 
+
 ---
 
 ### 2. Directory Structure & Codebase Organization
