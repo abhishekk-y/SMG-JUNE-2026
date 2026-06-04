@@ -1,7 +1,8 @@
 // Finance Portal - Complete with team-provided components
 import { useState, useEffect, useMemo } from 'react';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
-// ============ MOCK DATA ============
+// ============ DEFAULT DATA ============
 const financeBudget = [
     { id: 'BUD-2025', department: 'Operations', allocated: 6500000, spent: 4200000 },
     { id: 'BUD-2025-FIN', department: 'Finance', allocated: 3500000, spent: 1850000 },
@@ -35,47 +36,58 @@ const financePurchaseOrders = [
 ];
 
 // ============ HOOKS ============
-function useMockApi(key: string, initialData: any[]) {
-    const storageKey = `mock:${key}`;
-    const [data, setData] = useState(() => {
-        try {
-            const raw = localStorage.getItem(storageKey);
-            return raw ? JSON.parse(raw) : initialData;
-        } catch {
-            return initialData;
-        }
-    });
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(data));
-        } catch { }
-    }, [data, storageKey]);
-
-    const delay = (ms = 450) => new Promise(res => setTimeout(res, ms));
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
 
     const api = useMemo(() => ({
         async add(item: any) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => [...prev, item]);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
             return item;
         },
         async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it)));
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
         },
         async remove(matchFn: (it: any) => boolean) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => prev.filter(it => !matchFn(it)));
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
         },
-    }), []);
+    }), [key]);
 
     return { data, setData, api, loading };
 }
@@ -208,7 +220,7 @@ function Modal({ open, title, onClose, children }: { open: boolean; title: strin
 
 // ============ PORTAL VIEWS ============
 function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
-    const budgetData = useMockApi('finance:budget', financeBudget).data;
+    const budgetData = useDataStore('finance:budget', financeBudget).data;
     const totals = useMemo(() => {
         const allocated = budgetData.reduce((s: number, b: any) => s + (b.allocated || 0), 0);
         const spent = budgetData.reduce((s: number, b: any) => s + (b.spent || 0), 0);
@@ -228,7 +240,7 @@ function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
 }
 
 function BudgetView() {
-    const { data, api } = useMockApi('finance:budget', financeBudget);
+    const { data, api } = useDataStore('finance:budget', financeBudget);
     const budgets = useSort(data, 'department', 'asc');
     const totals = useMemo(() => {
         const allocated = data.reduce((s: number, b: any) => s + (b.allocated || 0), 0);
@@ -277,7 +289,7 @@ function BudgetView() {
 }
 
 function ExpensesView() {
-    const { data, api } = useMockApi('finance:expenses', financeExpenses);
+    const { data, api } = useDataStore('finance:expenses', financeExpenses);
     const [query, setQuery] = useState('');
     const filtered = useSearch(data, ['desc', 'status'], query);
     const expenses = useSort(filtered, 'date', 'desc');
@@ -315,7 +327,7 @@ function ExpensesView() {
 }
 
 function InvoicesView() {
-    const { data } = useMockApi('finance:invoices', financeInvoices);
+    const { data } = useDataStore('finance:invoices', financeInvoices);
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Invoices</h2></div>
@@ -346,7 +358,7 @@ function InvoicesView() {
 }
 
 function PayrollView() {
-    const { data } = useMockApi('finance:payroll', financePayroll);
+    const { data } = useDataStore('finance:payroll', financePayroll);
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Payroll</h2></div>
@@ -365,7 +377,7 @@ function PayrollView() {
 }
 
 function ApprovalsView() {
-    const { data, api } = useMockApi('finance:approvals', financeApprovals);
+    const { data, api } = useDataStore('finance:approvals', financeApprovals);
     const approve = async (id: string) => {
         await api.update((a: any) => a.id === id, () => ({ status: 'Approved' }));
     };
@@ -391,7 +403,7 @@ function ApprovalsView() {
 }
 
 function VendorsView() {
-    const { data } = useMockApi('finance:vendors', financeVendors);
+    const { data } = useDataStore('finance:vendors', financeVendors);
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Vendors</h2></div>
@@ -408,7 +420,7 @@ function VendorsView() {
 }
 
 function PurchaseOrdersView() {
-    const { data } = useMockApi('finance:purchaseorders', financePurchaseOrders);
+    const { data } = useDataStore('finance:purchaseorders', financePurchaseOrders);
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Purchase Orders</h2></div>

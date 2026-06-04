@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   UserPlus,
   ShieldCheck,
@@ -11,10 +11,12 @@ import {
   CheckCircle,
   AlertTriangle,
   MessageSquare,
+  Loader2,
+  FileText,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { recentRequests } from '../../mock/mockData';
+import { getUsers, getGeneralRequests, createEmployee, updateUser, changePassword, parseResume } from '../../services/api';
 
 type User = {
   id: string;
@@ -54,56 +56,33 @@ type Issue = {
 };
 
 export const SuperAdminUsersPage = () => {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 'EMP1001',
-      name: 'Rohit Sharma',
-      role: 'Employee',
-      department: 'Assembly',
-      status: 'Active',
-      email: 'rohit.sharma@company.com',
-      phone: '+91 98200 10001',
-      location: 'Pune',
-      joinDate: '2022-02-10',
-      reportingManager: 'Priya Singh',
-    },
-    {
-      id: 'EMP1002',
-      name: 'Priya Singh',
-      role: 'Admin',
-      department: 'HR',
-      status: 'Active',
-      email: 'priya.singh@company.com',
-      phone: '+91 98200 10002',
-      location: 'Mumbai',
-      joinDate: '2020-08-19',
-      reportingManager: 'CHRO',
-    },
-    {
-      id: 'EMP1003',
-      name: 'Amit Patel',
-      role: 'Employee',
-      department: 'Quality',
-      status: 'Inactive',
-      email: 'amit.patel@company.com',
-      phone: '+91 98200 10003',
-      location: 'Ahmedabad',
-      joinDate: '2019-12-01',
-      reportingManager: 'Quality Head',
-    },
-    {
-      id: 'EMP1004',
-      name: 'Sneha Reddy',
-      role: 'Employee',
-      department: 'Technology',
-      status: 'Active',
-      email: 'sneha.reddy@company.com',
-      phone: '+91 98200 10004',
-      location: 'Hyderabad',
-      joinDate: '2021-04-05',
-      reportingManager: 'Vikram Singh',
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getUsers();
+        setUsers(Array.isArray(data) ? data.map((u: any) => ({
+          id: u.empId || u._id,
+          name: u.name,
+          role: u.role || 'Employee',
+          department: u.dept || u.department || '',
+          status: u.status || 'Active',
+          email: u.email,
+          phone: u.phone || '',
+          location: u.location || '',
+          joinDate: u.joinDate || '',
+          reportingManager: u.reportingManager || '',
+        })) : []);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const [query, setQuery] = useState('');
   const [searchBy, setSearchBy] = useState<'profile' | 'employeeId' | 'name'>('name');
@@ -114,6 +93,10 @@ export const SuperAdminUsersPage = () => {
   const [editForm, setEditForm] = useState<Partial<User>>({});
   const [isCreate, setIsCreate] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [generatedCreds, setGeneratedCreds] = useState<{ email: string; password: string; message: string; emailPreviewUrl?: string } | null>(null);
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [isParsingResume, setIsParsingResume] = useState(false);
 
   const [requestsByUser, setRequestsByUser] = useState<Record<string, Request[]>>({});
   const [issuesByUser, setIssuesByUser] = useState<Record<string, Issue[]>>({});
@@ -129,7 +112,7 @@ export const SuperAdminUsersPage = () => {
     });
   }, [users, query, searchBy]);
 
-  const openUser = (u: User, tab: 'profile' | 'requests' | 'issues' = 'profile', mode: 'view' | 'edit' = 'view') => {
+  const openUser = async (u: User, tab: 'profile' | 'requests' | 'issues' = 'profile', mode: 'view' | 'edit' = 'view') => {
     setSelectedUser(u);
     setActiveTab(tab);
     setDetailMode(mode);
@@ -137,70 +120,161 @@ export const SuperAdminUsersPage = () => {
     setEditForm(u);
     setIsCreate(false);
     if (!requestsByUser[u.id]) {
-      const sample: Request[] = recentRequests.slice(0, 4).map((r, idx) => ({
-        id: `${u.id}-REQ${idx + 1}`,
-        userId: u.id,
-        type: r.type,
-        description: r.description,
-        date: r.date,
-        status: (['Pending', 'Approved', 'In Progress', 'Rejected'] as const)[idx % 4],
-        approver: u.reportingManager || 'HR Team',
-      }));
-      setRequestsByUser((prev) => ({ ...prev, [u.id]: sample }));
+      try {
+        const data = await getGeneralRequests(u.id);
+        const reqs: Request[] = (Array.isArray(data) ? data : []).map((r: any, idx: number) => ({
+          id: r._id || `${u.id}-REQ${idx + 1}`,
+          userId: u.id,
+          type: r.type || 'Request',
+          description: r.description || r.reason || '',
+          date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '-',
+          status: r.status || 'Pending',
+          approver: u.reportingManager || 'HR Team',
+        }));
+        setRequestsByUser((prev) => ({ ...prev, [u.id]: reqs }));
+      } catch (err) {
+        console.error('Error fetching requests:', err);
+        setRequestsByUser((prev) => ({ ...prev, [u.id]: [] }));
+      }
     }
     if (!issuesByUser[u.id]) {
       setIssuesByUser((prev) => ({ ...prev, [u.id]: [] }));
     }
   };
 
-  const saveUserEdits = () => {
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsingResume(true);
+    setFormError(null);
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      const res = await parseResume(formData);
+      if (res.success && res.data) {
+        setEditForm((prev) => ({
+          ...prev,
+          name: res.data.name || prev.name,
+          email: res.data.email || prev.email,
+          phone: res.data.phone || prev.phone,
+          location: res.data.location || prev.location,
+          department: res.data.suggestedDepartment || prev.department,
+        }));
+        // Optional: show a small success message or just let the form populate
+      }
+    } catch (err: any) {
+      setFormError('Failed to parse resume: ' + err.message);
+    } finally {
+      setIsParsingResume(false);
+    }
+  };
+
+  const saveUserEdits = async () => {
     setFormError(null);
     if (!editForm.name || !editForm.email || !editForm.department || !(editForm.role as User['role'])) {
       setFormError('Please fill Name, Email, Department and Role.');
       return;
     }
-    if (isCreate) {
-      const genId = () => {
-        const nums = users
-          .map((u) => /EMP(\d+)/.exec(u.id)?.[1])
-          .filter(Boolean)
-          .map((n) => parseInt(n as string, 10));
-        const next = (nums.length ? Math.max(...(nums as number[])) : 1000) + 1;
-        return `EMP${next}`;
-      };
-      const newUser: User = {
-        id: (editForm.id as string) || genId(),
-        name: editForm.name as string,
-        role: (editForm.role as User['role']) || 'Employee',
-        department: editForm.department as string,
-        status: (editForm.status as User['status']) || 'Active',
-        email: editForm.email as string,
-        phone: (editForm.phone as string) || '',
-        location: (editForm.location as string) || '',
-        joinDate: (editForm.joinDate as string) || new Date().toISOString().slice(0, 10),
-        reportingManager: (editForm.reportingManager as string) || '',
-      };
-      setUsers((prev) => [newUser, ...prev]);
-      setRequestsByUser((prev) => ({ ...prev, [newUser.id]: [] }));
-      setIssuesByUser((prev) => ({ ...prev, [newUser.id]: [] }));
-      setSelectedUser(newUser);
-      setDetailMode('view');
-      setIsEdit(false);
-      setIsCreate(false);
-    } else {
-      if (!selectedUser) return;
-      setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, ...(editForm as User) } : u)));
-      const updated = { ...selectedUser, ...(editForm as User) } as User;
-      setSelectedUser(updated);
-      setIsEdit(false);
-      setDetailMode('view');
+    try {
+      if (isCreate) {
+        // Prepare data matching backend model structure
+        const dataToSubmit = {
+          name: editForm.name,
+          email: editForm.email,
+          dept: editForm.department,
+          role: editForm.role || 'employee',
+          designation: editForm.role || 'Employee', // fallback
+          phone: editForm.phone || '',
+          location: editForm.location || '',
+          reportingTo: editForm.reportingManager || '',
+          dateOfJoining: editForm.joinDate || new Date().toISOString().slice(0, 10),
+        };
+        const newDbUser = await createEmployee(dataToSubmit);
+        
+        // Show credentials dialog
+        setGeneratedCreds({
+          email: newDbUser.email,
+          password: newDbUser.generatedPassword,
+          message: newDbUser.message,
+          emailPreviewUrl: newDbUser.emailPreviewUrl
+        });
+
+        const newUser: User = {
+          id: newDbUser.empId || newDbUser._id,
+          name: newDbUser.name,
+          role: (newDbUser.role as User['role']) || 'Employee',
+          department: newDbUser.dept,
+          status: 'Active',
+          email: newDbUser.email,
+          phone: newDbUser.phone || '',
+          location: newDbUser.location || '',
+          joinDate: newDbUser.dateOfJoining || '',
+          reportingManager: newDbUser.reportingTo || '',
+        };
+        setUsers((prev) => [newUser, ...prev]);
+        setRequestsByUser((prev) => ({ ...prev, [newUser.id]: [] }));
+        setIssuesByUser((prev) => ({ ...prev, [newUser.id]: [] }));
+        setSelectedUser(newUser);
+        setDetailMode('view');
+        setIsEdit(false);
+        setIsCreate(false);
+      } else {
+        if (!selectedUser) return;
+        const mongoId = (await getUsers()).find((u:any) => u.empId === selectedUser.id || u._id === selectedUser.id)?._id;
+        if(mongoId) {
+           await updateUser(mongoId, {
+              name: editForm.name,
+              email: editForm.email,
+              dept: editForm.department,
+              role: editForm.role,
+              phone: editForm.phone,
+              location: editForm.location,
+              reportingTo: editForm.reportingManager,
+              dateOfJoining: editForm.joinDate
+           });
+        }
+
+        setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, ...(editForm as User) } : u)));
+        const updated = { ...selectedUser, ...(editForm as User) } as User;
+        setSelectedUser(updated);
+        setIsEdit(false);
+        setDetailMode('view');
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save user');
     }
   };
 
-  const toggleActive = (u: User) => {
-    const newStatus = u.status === 'Active' ? 'Inactive' : 'Active';
-    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, status: newStatus } : x)));
-    if (selectedUser?.id === u.id) setSelectedUser({ ...u, status: newStatus });
+  const toggleActive = async (u: User) => {
+    try {
+      const newStatus = u.status === 'Active' ? 'Inactive' : 'Active';
+      const mongoId = (await getUsers()).find((dbU:any) => dbU.empId === u.id || dbU._id === u.id)?._id;
+      if (mongoId) {
+         await updateUser(mongoId, { isActive: newStatus === 'Active' });
+      }
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, status: newStatus } : x)));
+      if (selectedUser?.id === u.id) setSelectedUser({ ...u, status: newStatus });
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if(!selectedUser) return;
+    try {
+        const mongoId = (await getUsers()).find((dbU:any) => dbU.empId === selectedUser.id || dbU._id === selectedUser.id)?._id;
+        if(mongoId && newPassword.length >= 6) {
+           await changePassword(mongoId, { newPassword });
+           setChangePwdOpen(false);
+           setNewPassword('');
+           alert('Password updated successfully');
+        } else {
+           alert('Password must be at least 6 characters');
+        }
+    } catch(e: any) {
+       alert(e.message || 'Failed to change password');
+    }
   };
 
   const [denyDialog, setDenyDialog] = useState<{ open: boolean; userId?: string; request?: Request; reason: string }>(
@@ -407,6 +481,21 @@ export const SuperAdminUsersPage = () => {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="mt-4">
+              {isCreate && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-[#F4F7FE] to-white rounded-xl border border-blue-100 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-[#0B4DA2] font-bold text-sm flex items-center gap-2"><FileText size={16}/> AI Resume Parser</h4>
+                    <p className="text-xs text-gray-500 mt-1">Upload the candidate's resume to automatically extract and fill their details.</p>
+                  </div>
+                  <div>
+                    <input type="file" id="resume-upload" className="hidden" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
+                    <label htmlFor="resume-upload" className="cursor-pointer bg-white border border-[#0B4DA2] text-[#0B4DA2] px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#F4F7FE] transition">
+                      {isParsingResume ? <><Loader2 size={16} className="animate-spin" /> Parsing...</> : 'Upload Resume'}
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {formError && (
                 <div className="mb-3 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">{formError}</div>
               )}
@@ -414,11 +503,10 @@ export const SuperAdminUsersPage = () => {
                 <div>
                   <label className="text-xs text-gray-500">Employee ID</label>
                   <input
-                    disabled={!isCreate}
+                    disabled
                     value={editForm.id || ''}
-                    onChange={(e) => setEditForm((f) => ({ ...f, id: e.target.value }))}
-                    className={`w-full bg-[#F4F7FE] border rounded-lg px-3 py-2 mt-1 ${isCreate ? 'border-[#0B4DA2]' : 'border-transparent'}`}
-                    placeholder="Auto-generated if left blank (e.g., EMP1005)"
+                    className={`w-full bg-[#F4F7FE] border rounded-lg px-3 py-2 mt-1 border-transparent opacity-70`}
+                    placeholder="Auto-generated by system (e.g. SMG-2024-001)"
                   />
                 </div>
               </div>
@@ -504,20 +592,27 @@ export const SuperAdminUsersPage = () => {
 
               <div className="flex justify-between gap-2 mt-6">
                 <button onClick={backToList} className="px-4 py-2 rounded-lg border">Back</button>
-                {detailMode === 'edit' ? (
-                  <>
-                    <button className="px-4 py-2 rounded-lg border flex items-center gap-2" onClick={isCreate ? backToList : () => { setIsEdit(false); setDetailMode('view'); }}>
-                      <X size={16} /> Cancel
+                <div className="flex gap-2">
+                  {!isCreate && detailMode === 'view' && (
+                    <button className="px-4 py-2 rounded-lg border text-[#0B4DA2] font-semibold hover:bg-[#F4F7FE]" onClick={() => setChangePwdOpen(true)}>
+                      Change Password
                     </button>
-                    <button className="px-4 py-2 rounded-lg bg-[#0B4DA2] text-white flex items-center gap-2" onClick={saveUserEdits}>
-                      <Save size={16} /> Save Changes
+                  )}
+                  {detailMode === 'edit' ? (
+                    <>
+                      <button className="px-4 py-2 rounded-lg border flex items-center gap-2" onClick={isCreate ? backToList : () => { setIsEdit(false); setDetailMode('view'); }}>
+                        <X size={16} /> Cancel
+                      </button>
+                      <button className="px-4 py-2 rounded-lg bg-[#0B4DA2] text-white flex items-center gap-2" onClick={saveUserEdits}>
+                        <Save size={16} /> Save Changes
+                      </button>
+                    </>
+                  ) : (
+                    <button className="px-4 py-2 rounded-lg border flex items-center gap-2" onClick={() => { setDetailMode('edit'); setIsEdit(true); }}>
+                      <Edit size={16} /> Edit Details
                     </button>
-                  </>
-                ) : (
-                  <button className="px-4 py-2 rounded-lg border flex items-center gap-2" onClick={() => { setDetailMode('edit'); setIsEdit(true); }}>
-                    <Edit size={16} /> Edit Details
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </TabsContent>
 
@@ -661,6 +756,71 @@ export const SuperAdminUsersPage = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Generated Credentials Dialog */}
+      {generatedCreds && (
+        <Dialog open={!!generatedCreds}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-[#1B254B] flex items-center gap-2">
+                <CheckCircle size={18} className="text-green-600" /> Employee Created
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div className="p-4 bg-green-50 text-green-800 rounded-lg border border-green-200">
+                <p className="font-semibold">{generatedCreds.message}</p>
+                <p className="text-sm mt-2">The system has generated a secure welcome email containing these credentials and sent it to the employee's provided address.</p>
+              </div>
+              <div className="bg-[#F4F7FE] p-4 rounded-xl border border-gray-200">
+                <div className="text-sm text-gray-500">Email</div>
+                <div className="font-bold text-[#1B254B] font-mono select-all mb-3">{generatedCreds.email}</div>
+                <div className="text-sm text-gray-500">Temporary Password</div>
+                <div className="font-bold text-[#1B254B] font-mono select-all">{generatedCreds.password}</div>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                {generatedCreds.emailPreviewUrl ? (
+                    <a href={generatedCreds.emailPreviewUrl} target="_blank" rel="noreferrer" className="text-sm text-[#0B4DA2] hover:underline font-semibold">
+                        View Email Preview ↗
+                    </a>
+                ) : <div/>}
+                <button className="px-4 py-2 rounded-lg bg-[#0B4DA2] text-white font-bold" onClick={() => setGeneratedCreds(null)}>Done</button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Change Password Dialog */}
+      {changePwdOpen && (
+        <Dialog open={changePwdOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-[#1B254B]">Change User Password</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 mt-2">
+              <div className="text-sm text-gray-600">Enter a new password for <span className="font-semibold text-[#0B4DA2]">{selectedUser?.name}</span>. The user will be notified.</div>
+              <input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-[#F4F7FE] border rounded-lg px-3 py-2"
+                placeholder="New password (min 6 chars)"
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button className="px-4 py-2 rounded-lg border" onClick={() => { setChangePwdOpen(false); setNewPassword(''); }}>Cancel</button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-[#0B4DA2] text-white disabled:opacity-50"
+                  disabled={newPassword.length < 6}
+                  onClick={handlePasswordChange}
+                >
+                  Update Password
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   );
 };

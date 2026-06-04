@@ -34,6 +34,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 
+import { triggerGlobalNotification } from '../../services/api';
+
 interface ProductionOrder {
     id: string;
     productName: string;
@@ -136,8 +138,9 @@ export function AssemblyPortal() {
 
     const handleCreateOrder = () => {
         if (newOrder.productName && newOrder.quantity) {
+            const orderId = `PO${String(orders.length + 1).padStart(3, '0')}`;
             const order: ProductionOrder = {
-                id: `PO${String(orders.length + 1).padStart(3, '0')}`,
+                id: orderId,
                 productName: newOrder.productName,
                 quantity: parseInt(newOrder.quantity),
                 status: 'pending',
@@ -149,6 +152,7 @@ export function AssemblyPortal() {
             setOrders([order, ...orders]);
             setNewOrder({ productName: '', quantity: '', assignedTo: '', dueDate: '', priority: 'medium' });
             setShowNewOrderDialog(false);
+            triggerGlobalNotification('Assembly', `New production order ${orderId} for ${order.productName} has been created and assigned to ${order.assignedTo}.`, 'info');
             alert('Production order created successfully!');
         }
     };

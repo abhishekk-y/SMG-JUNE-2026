@@ -125,9 +125,9 @@ graph TD
 
 ---
 
-### 7. Core Application Logic (Request Approval Sequence)
+### 7. Core Application Logic (Request Approval Sequence & Notification Broadcast)
 
-This sequence diagram traces the definitive lifecycle of a standard business process, specifically an Employee Leave or Gate Pass request.
+This sequence diagram traces the definitive lifecycle of a standard business process (e.g., an Employee Gate Pass) and demonstrates our automated Notification Engine.
 
 ```mermaid
 sequenceDiagram
@@ -135,44 +135,100 @@ sequenceDiagram
     participant UI_Layer as React Frontend
     participant Express_API as Express Server
     participant MongoDB as Database
-    participant PDF_Engine as PDFKit
-    participant Administrator
+    participant Admin as Administrator
 
     %% Submission Process
-    Employee->>UI_Layer: Submits Leave/Gate Pass Form
+    Employee->>UI_Layer: Submits Gate Pass Request
     UI_Layer->>Express_API: POST Request (JWT Authorized)
     Express_API->>MongoDB: Insert Document (Status: Pending)
     MongoDB-->>Express_API: Return Document UUID
     Express_API-->>UI_Layer: HTTP 201 Created
     UI_Layer-->>Employee: Update View State
 
-    %% Administrative Process
-    Administrator->>UI_Layer: Accesses Admin Console
+    %% Administrative Process & Notification Trigger
+    Admin->>UI_Layer: Accesses Admin Console
     UI_Layer->>Express_API: GET Pending Requests
     Express_API->>MongoDB: Query Pending Documents
     MongoDB-->>Express_API: Return Data Array
     Express_API-->>UI_Layer: HTTP 200 OK
     
-    Administrator->>UI_Layer: Executes Approval Action
-    UI_Layer->>Express_API: PUT Update Request Status
+    Admin->>UI_Layer: Executes Approval Action
+    UI_Layer->>Express_API: PUT Update Request Status (/api/gatepasses/:id)
     Express_API->>MongoDB: Mutate Document (Status: Approved)
-    MongoDB-->>Express_API: Write Acknowledged
+    
+    %% Automated Notification Injection
+    Note right of Express_API: Automated System Event
+    Express_API->>MongoDB: Create Notification (Target: Request User)
+    MongoDB-->>Express_API: Acknowledge Write
+    
     Express_API-->>UI_Layer: HTTP 200 OK
-
-    %% Document Generation Process
-    Employee->>UI_Layer: Invokes Document Download
-    UI_Layer->>Express_API: HTTP GET /api/pdf/:id
-    Express_API->>MongoDB: Retrieve Approved Data
-    MongoDB-->>Express_API: Entity Details
-    Express_API->>PDF_Engine: Construct PDF Layout
-    PDF_Engine-->>Express_API: Binary Stream
-    Express_API-->>UI_Layer: Pipe Response (application/pdf)
-    UI_Layer-->>Employee: Browser Triggers File Download
+    
+    %% Real-time Employee Feedback
+    UI_Layer->>Express_API: Polling/Fetch Notifications
+    Express_API->>MongoDB: Query Unread Notifications
+    MongoDB-->>Express_API: Array of Alerts
+    Express_API-->>UI_Layer: HTTP 200 (Alert: "Request Approved")
+    UI_Layer-->>Employee: Displays Red Dot / Toast Notification
 ```
 
 ---
 
-### 8. Complete Database Schema (Entity Relationship)
+### 8. Deep Dive: Backend Automation & Generic Department Store
+
+The SMG Portal implements a highly sophisticated, generic data persistence layer that replaces static mocks with dynamic MongoDB synchronization.
+
+**1. Department Data Store API (`/api/dept-store/:key`)**
+Instead of creating 50 separate CRUD endpoints for minor departmental functions (e.g., Events, Finance Budgets), the system uses a universal polymorphic endpoint. 
+- **GET** fetches the JSON payload associated with a specific key.
+- **PUT** overwrites the payload and critically **triggers a Global Broadcast Notification**.
+
+**2. Automated Notification Broadcaster**
+When a department updates its generic store (e.g., creating a Townhall Event), the backend intercepts this `PUT` request. It queries all active employees and uses `Notification.insertMany()` to instantly alert the entire company.
+
+```mermaid
+graph LR
+    subgraph Frontend Portals
+        Events[Events Portal]
+        Fin[Finance Portal]
+        HR[HR Portal]
+    end
+
+    subgraph Generic API Layer
+        API[PUT /api/dept-store/:key]
+    end
+
+    subgraph Automation Engine
+        DB[(MongoDB)]
+        Broadcaster{Notification Broadcaster}
+        Users[All Active Employees]
+    end
+
+    Events -->|Saves Event| API
+    Fin -->|Updates Budget| API
+    HR -->|Updates Policy| API
+    
+    API -->|1. Store Data| DB
+    API -->|2. Trigger| Broadcaster
+    Broadcaster -->|3. Alert| Users
+```
+
+---
+
+### 9. API Traffic Distribution (Estimated)
+
+```mermaid
+pie title "Predicted API Endpoint Traffic Distribution"
+    "Authentication & JWT Refresh" : 20
+    "Notifications Polling" : 25
+    "Department Store (GET/PUT)" : 15
+    "Employee Requests (Leaves, Passes)" : 20
+    "Reporting & PDF Generation" : 10
+    "Super Admin Metrics" : 10
+```
+
+---
+
+### 10. Complete Database Schema (Entity Relationship)
 
 The following intense ER Diagram defines the strict schema constraints, data types, and collection bindings managed within MongoDB via Mongoose.
 
@@ -308,7 +364,7 @@ erDiagram
 
 ---
 
-### 9. Subsystem Categorization Analysis
+### 11. Subsystem Categorization Analysis
 
 ```mermaid
 pie title "Enterprise Module Distribution & Scope Analysis"
@@ -321,7 +377,7 @@ pie title "Enterprise Module Distribution & Scope Analysis"
 
 ---
 
-### 10. Initialization & Deployment Procedures
+### 12. Initialization & Deployment Procedures
 
 To initialize the environment for development or production deployment, execute the following commands in their respective module directories.
 

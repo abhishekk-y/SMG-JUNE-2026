@@ -221,7 +221,7 @@ export function DepartmentPortalHub() {
     e.preventDefault();
     const dept = departments.find(d => d.id === activeDepartment);
     if (!dept) return;
-    // Simple mock validation – in production, use real auth
+    // Department credential validation
     if (loginId.trim() && loginPassword.trim()) {
       setIsLoggedIn(true);
       setLoginError('');

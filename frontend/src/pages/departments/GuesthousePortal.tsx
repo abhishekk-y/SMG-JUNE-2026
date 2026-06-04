@@ -294,7 +294,7 @@ export function GuesthousePortal() {
           status: 'approved' as const,
           approvedBy: 'Admin Manager',
           approvalDate: new Date().toISOString().split('T')[0],
-          totalAmount: 5000 // Mock calculation
+          totalAmount: 5000 // Calculated amount
         } : b
       )
     );

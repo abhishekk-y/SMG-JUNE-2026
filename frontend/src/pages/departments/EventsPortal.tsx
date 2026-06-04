@@ -1,8 +1,9 @@
 // Events Portal - Complete with team-provided components
 import { useState, useEffect, useMemo } from 'react';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 import { NavLink, useNavigate } from 'react-router-dom';
 
-// ============ MOCK DATA ============
+// ============ DEFAULT DATA ============
 const eventEvents = [
     { id: 'E001', name: 'Annual Townhall', date: '2025-01-15', location: 'Auditorium', status: 'Upcoming' },
     { id: 'E002', name: 'Safety Training', date: '2025-12-28', location: 'Training Room A', status: 'Open' },
@@ -39,47 +40,58 @@ const eventSchedule = [
 ];
 
 // ============ HOOKS ============
-function useMockApi(key: string, initialData: any[]) {
-    const storageKey = `mock:${key}`;
-    const [data, setData] = useState(() => {
-        try {
-            const raw = localStorage.getItem(storageKey);
-            return raw ? JSON.parse(raw) : initialData;
-        } catch {
-            return initialData;
-        }
-    });
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(data));
-        } catch { }
-    }, [data, storageKey]);
-
-    const delay = (ms = 450) => new Promise(res => setTimeout(res, ms));
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
 
     const api = useMemo(() => ({
         async add(item: any) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => [...prev, item]);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
             return item;
         },
         async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it)));
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
         },
         async remove(matchFn: (it: any) => boolean) {
             setLoading(true);
-            await delay();
-            setData((prev: any[]) => prev.filter(it => !matchFn(it)));
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
             setLoading(false);
         },
-    }), []);
+    }), [key]);
 
     return { data, setData, api, loading };
 }
@@ -227,7 +239,7 @@ function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
 }
 
 function EventsView() {
-    const { data, api } = useMockApi('event:events', eventEvents);
+    const { data, api } = useDataStore('event:events', eventEvents);
     const [query, setQuery] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
     const [sortBy, setSortBy] = useState('date');
@@ -313,7 +325,7 @@ function EventsView() {
 }
 
 function RegistrationsView() {
-    const { data, api } = useMockApi('event:registrations', eventRegistrations);
+    const { data, api } = useDataStore('event:registrations', eventRegistrations);
     const [query, setQuery] = useState('');
     const filtered = useSearch(data, ['attendee', 'email', 'status'], query);
 
@@ -362,7 +374,7 @@ function RegistrationsView() {
 }
 
 function VenuesView() {
-    const { data } = useMockApi('event:venues', eventVenues);
+    const { data } = useDataStore('event:venues', eventVenues);
     return (
         <div>
             <div className="hero"><div className="title">Venues</div></div>
@@ -379,7 +391,7 @@ function VenuesView() {
 }
 
 function SponsorsView() {
-    const { data } = useMockApi('event:sponsors', eventSponsors);
+    const { data } = useDataStore('event:sponsors', eventSponsors);
     return (
         <div>
             <div className="hero"><div className="title">Sponsors</div></div>
@@ -396,7 +408,7 @@ function SponsorsView() {
 }
 
 function VolunteersView() {
-    const { data } = useMockApi('event:volunteers', eventVolunteers);
+    const { data } = useDataStore('event:volunteers', eventVolunteers);
     return (
         <div>
             <div className="hero"><div className="title">Volunteers</div></div>
@@ -413,7 +425,7 @@ function VolunteersView() {
 }
 
 function FeedbackView() {
-    const { data } = useMockApi('event:feedback', eventFeedback);
+    const { data } = useDataStore('event:feedback', eventFeedback);
     return (
         <div>
             <div className="hero"><div className="title">Feedback</div></div>
@@ -433,7 +445,7 @@ function FeedbackView() {
 }
 
 function ScheduleView() {
-    const { data } = useMockApi('event:schedule', eventSchedule);
+    const { data } = useDataStore('event:schedule', eventSchedule);
     return (
         <div>
             <div className="hero"><div className="title">Schedule</div></div>
