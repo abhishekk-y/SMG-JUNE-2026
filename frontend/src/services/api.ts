@@ -335,12 +335,26 @@ export const downloadLetter = (userId: string, letterType: 'experience' | 'offer
 // ═══════════════════════════════════════
 // DEPARTMENT DATA STORE (replaces localStorage)
 // ═══════════════════════════════════════
-export const getDeptStore = (key: string) => apiFetch(`/dept-store/${encodeURIComponent(key)}`);
-export const setDeptStore = (key: string, items: any[], department?: string) =>
-    apiFetch(`/dept-store/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ items, department }) });
-export const clearDeptStore = (key: string) =>
-    apiFetch(`/dept-store/${encodeURIComponent(key)}`, { method: 'DELETE' });
+export const getDeptStore = (key: string) =>
+  apiFetch(`/dept-store/${encodeURIComponent(key)}`);
 
+export const setDeptStore = (
+  key: string,
+  items: any[],
+  department?: string
+) =>
+  apiFetch(`/dept-store/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ items, department }),
+  });
+
+// Alias for compatibility
+export const saveDeptStore = setDeptStore;
+
+export const clearDeptStore = (key: string) =>
+  apiFetch(`/dept-store/${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+  });
 // ═══════════════════════════════════════
 // CROSS-PORTAL STATS
 // ═══════════════════════════════════════
@@ -380,18 +394,7 @@ export const parseResume = (formData: FormData) =>
     apiFetch('/resume/parse', { method: 'POST', body: formData });
 
 // ═══════════════════════════════════════
-// DEPARTMENT DATA STORE (replaces localStorage mock data)
-// ═══════════════════════════════════════
-export const getDeptStore = (key: string) => apiFetch(`/dept-store/${encodeURIComponent(key)}`);
-export const saveDeptStore = (key: string, items: any[], department?: string) =>
-    apiFetch(`/dept-store/${encodeURIComponent(key)}`, {
-        method: 'PUT',
-        body: JSON.stringify({ items, department })
-    });
-
-// ═══════════════════════════════════════
 // GLOBAL NOTIFICATIONS
 // ═══════════════════════════════════════
 export const triggerGlobalNotification = (module: string, message: string, type: string = 'info') =>
     apiFetch('/notifications/global', { method: 'POST', body: JSON.stringify({ module, message, type }) });
-
