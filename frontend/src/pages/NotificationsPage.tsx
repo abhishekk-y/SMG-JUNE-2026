@@ -1,85 +1,83 @@
-import React, { useState } from 'react';
-import { Bell, X, Check, CheckCheck, Trash2, Filter, Clock, Calendar, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, X, Check, CheckCheck, Trash2, Filter, Clock, Calendar, AlertCircle, Info, CheckCircle, Loader2 } from 'lucide-react';
+import { getNotifications, markNotificationRead } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export const NotificationsPage = () => {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
-  
-  const notifications = [
-    {
-      id: 1,
-      type: 'success',
-      title: 'Leave Request Approved',
-      message: 'Your leave request for Dec 15-17 has been approved by Ramesh Kumar.',
-      time: '2 hours ago',
-      date: 'Today, 02:30 PM',
-      read: false
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'Training Session Reminder',
-      message: 'Safety Training Workshop starts tomorrow at 10:00 AM in Conference Room A.',
-      time: '5 hours ago',
-      date: 'Today, 11:15 AM',
-      read: false
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'Pending Action Required',
-      message: 'Please submit your monthly timesheet by end of day tomorrow.',
-      time: '1 day ago',
-      date: 'Yesterday, 03:45 PM',
-      read: true
-    },
-    {
-      id: 4,
-      type: 'info',
-      title: 'Payslip Available',
-      message: 'Your payslip for November 2024 is now available for download.',
-      time: '2 days ago',
-      date: 'Dec 10, 09:00 AM',
-      read: true
-    },
-    {
-      id: 5,
-      type: 'success',
-      title: 'Gate Pass Approved',
-      message: 'Your gate pass request for Dec 12 has been approved.',
-      time: '2 days ago',
-      date: 'Dec 10, 02:15 PM',
-      read: true
-    },
-    {
-      id: 6,
-      type: 'info',
-      title: 'New Policy Update',
-      message: 'Updated Work from Home policy is now available. Please review the changes.',
-      time: '3 days ago',
-      date: 'Dec 9, 10:30 AM',
-      read: true
-    },
-    {
-      id: 7,
-      type: 'warning',
-      title: 'Document Expiring Soon',
-      message: 'Your vehicle insurance document expires on Dec 20, 2024. Please update.',
-      time: '4 days ago',
-      date: 'Dec 8, 04:00 PM',
-      read: true
-    },
-    {
-      id: 8,
-      type: 'success',
-      title: 'Training Completed',
-      message: 'You have successfully completed the "Advanced Scooter Maintenance" course.',
-      time: '5 days ago',
-      date: 'Dec 7, 11:45 AM',
-      read: true
-    }
-  ];
 
-  const getTypeIcon = (type) => {
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+    try {
+      const data = await getNotifications(user.id);
+      setNotifications(Array.isArray(data) ? data.map((n: any) => ({
+        id: n._id,
+        type: n.type || 'info',
+        title: n.title || 'Notification',
+        message: n.message || '',
+        time: getRelativeTime(n.createdAt),
+        date: n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-',
+        read: n.isRead || false,
+      })) : []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  function getRelativeTime(dateStr: string): string {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const then = new Date(dateStr);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffDay / 7)} week${Math.floor(diffDay / 7) > 1 ? 's' : ''} ago`;
+  }
+
+  const handleMarkRead = async (notifId: string) => {
+    try {
+      await markNotificationRead(notifId);
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await Promise.all(notifications.filter(n => !n.read).map(n => markNotificationRead(n.id)));
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('Error marking all read:', err);
+    }
+  };
+
+  const handleDismiss = (notifId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+  };
+
+  const handleClearAll = () => {
+    setNotifications([]);
+  };
+
+  const getTypeIcon = (type: string) => {
     switch(type) {
       case 'success': return <CheckCircle className="text-green-600" size={20} />;
       case 'warning': return <AlertCircle className="text-yellow-600" size={20} />;
@@ -87,7 +85,7 @@ export const NotificationsPage = () => {
     }
   };
 
-  const getTypeClass = (type) => {
+  const getTypeClass = (type: string) => {
     switch(type) {
       case 'success': return 'bg-green-50 border-green-200';
       case 'warning': return 'bg-yellow-50 border-yellow-200';
@@ -102,6 +100,15 @@ export const NotificationsPage = () => {
     : notifications.filter(n => n.read);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="animate-spin" size={32} style={{ color: 'var(--smg-royal)' }} />
+        <span className="ml-3 text-gray-500">Loading notifications...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -155,11 +162,11 @@ export const NotificationsPage = () => {
             </button>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 rounded-xl text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 transition-all flex items-center gap-1">
+            <button onClick={handleMarkAllRead} className="px-4 py-2 rounded-xl text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 transition-all flex items-center gap-1">
               <CheckCheck size={14} />
               Mark All Read
             </button>
-            <button className="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all flex items-center gap-1">
+            <button onClick={handleClearAll} className="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all flex items-center gap-1">
               <Trash2 size={14} />
               Clear All
             </button>
@@ -191,7 +198,7 @@ export const NotificationsPage = () => {
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                   </div>
-                  <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button onClick={() => handleDismiss(notification.id)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                     <X size={16} className="text-gray-400" />
                   </button>
                 </div>
@@ -205,7 +212,7 @@ export const NotificationsPage = () => {
                     {notification.date}
                   </span>
                   {!notification.read && (
-                    <button className="ml-auto text-xs font-bold text-[#0B4DA2] hover:underline flex items-center gap-1">
+                    <button onClick={() => handleMarkRead(notification.id)} className="ml-auto text-xs font-bold text-[#0B4DA2] hover:underline flex items-center gap-1">
                       <Check size={12} />
                       Mark as Read
                     </button>

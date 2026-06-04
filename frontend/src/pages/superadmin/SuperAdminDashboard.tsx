@@ -12,13 +12,14 @@ export const SuperAdminDashboard = ({ onNavigate }) => {
   };
   const handleClockOut = () => { setIsClockedIn(false); setClockInTime(null); };
 
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     employees: 0,
     monthlyPayroll: '₹0',
     activeProjects: 0,
     departments: 0,
     pendingRequests: 0,
     trainings: 0,
+    systemHealth: { database: 'Checking...', apiStatus: 'Checking...', emailService: 'Checking...' }
   });
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export const SuperAdminDashboard = ({ onNavigate }) => {
             departments: data.stats.departmentCount,
             pendingRequests: data.stats.pendingRequests,
             trainings: data.stats.completedTraining,
+            systemHealth: data.systemHealth
           });
         }
       })
@@ -121,11 +123,20 @@ export const SuperAdminDashboard = ({ onNavigate }) => {
           </div>
 
           <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
-            <h3 className="font-bold text-[#1B254B] mb-3 text-lg">Training Overview</h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div><GraduationCap className="text-[#0B4DA2] mx-auto mb-1" /><p className="text-2xl font-bold text-[#1B254B]">{stats.trainings}</p><p className="text-xs text-gray-500">Sessions</p></div>
-              <div><Building2 className="text-[#0B4DA2] mx-auto mb-1" /><p className="text-2xl font-bold text-[#1B254B]">18</p><p className="text-xs text-gray-500">Mandatory</p></div>
-              <div><Briefcase className="text-[#0B4DA2] mx-auto mb-1" /><p className="text-2xl font-bold text-[#1B254B]">1.2k</p><p className="text-xs text-gray-500">Certificates</p></div>
+            <h3 className="font-bold text-[#1B254B] mb-3 text-lg">System Health</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${stats.systemHealth?.database === 'Connected' ? 'bg-green-500' : 'bg-red-500'}`}></div><span className="text-sm font-bold text-gray-700">Database</span></div>
+                <span className="text-xs text-gray-500">{stats.systemHealth?.database || 'Checking...'}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${stats.systemHealth?.apiStatus === 'Healthy' ? 'bg-green-500' : 'bg-yellow-500'}`}></div><span className="text-sm font-bold text-gray-700">API Status</span></div>
+                <span className="text-xs text-gray-500">{stats.systemHealth?.apiStatus || 'Checking...'}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${stats.systemHealth?.emailService === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></div><span className="text-sm font-bold text-gray-700">Email SMTP</span></div>
+                <span className="text-xs text-gray-500">{stats.systemHealth?.emailService || 'Checking...'}</span>
+              </div>
             </div>
           </div>
         </div>

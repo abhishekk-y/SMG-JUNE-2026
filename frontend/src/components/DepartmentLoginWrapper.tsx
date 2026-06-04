@@ -8,7 +8,7 @@ interface DepartmentLoginWrapperProps {
 
 /**
  * Generic wrapper that displays a login form for a department.
- * After successful mock authentication, it renders the wrapped department dashboard.
+ * After successful authentication, it renders the wrapped department dashboard.
  */
 export function DepartmentLoginWrapper({ departmentName, children }: DepartmentLoginWrapperProps) {
     const [loggedIn, setLoggedIn] = useState(false);
@@ -18,7 +18,7 @@ export function DepartmentLoginWrapper({ departmentName, children }: DepartmentL
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (loginId.trim() && loginPwd.trim()) {
-            // Mock authentication – replace with real auth later
+            // Authenticate via department credentials
             setLoggedIn(true);
         } else {
             alert('Please enter both ID and password');

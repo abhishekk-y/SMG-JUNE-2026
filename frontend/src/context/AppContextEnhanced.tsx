@@ -1,40 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-// Enhanced Demo Data with ALL features
-const DEMO_EMPLOYEE = {
-  id: 'EMP1001',
-  empId: 'SMG-2024-042',
-  name: 'Rohit Sharma',
-  email: 'rohit.sharma@smg-scooters.com',
-  phone: '+91 98765 43210',
-  emergencyContact: '+91 98765 43211',
-  department: 'Assembly',
-  position: 'Senior Technician',
-  role: 'Senior Technician',
-  joiningDate: '2020-01-10',
-  dateOfBirth: '1992-08-15',
-  reportingTo: 'Priya Sharma',
-  shift: 'General (9:00 - 18:00)',
-  employeeType: 'Full-time',
-  location: 'Noida Plant',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit&backgroundColor=b6e3f4',
-  salary: '₹55,000',
-  bankAccount: 'HDFC Bank - ****6789',
-  panCard: 'ABCDE1234F',
-  aadharCard: '****-****-5678',
-  bloodGroup: 'O+',
-  address: 'Flat 402, Green Valley Apartments, Sector 12, Noida, UP - 201301',
-  education: [
-    { degree: 'B.Tech in Mechanical Engineering', institution: 'Delhi Technical University', year: '2010-2014', grade: '8.2 CGPA' },
-    { degree: 'Senior Secondary (XII)', institution: 'DAV Public School', year: '2010', grade: '88%' }
-  ],
-  certifications: [
-    { name: 'Six Sigma Green Belt', issuer: 'ASQ', year: '2021' },
-    { name: 'Industrial Safety', issuer: 'NSCI', year: '2020' }
-  ],
-  skills: ['Assembly Line Operations', 'Quality Control', 'Safety Compliance'],
-  languages: ['Hindi (Native)', 'English (Fluent)', 'Punjabi (Conversational)']
-};
+import * as api from '../services/api';
 
 interface AppContextType {
   // User Data
@@ -143,12 +108,12 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [currentUser, setCurrentUser] = useState(() => {
-    const stored = localStorage.getItem('userData');
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    const stored = localStorage.getItem('employee_user');
     if (stored) {
-      try { return JSON.parse(stored); } catch { return DEMO_EMPLOYEE; }
+      try { return JSON.parse(stored); } catch { return null; }
     }
-    return DEMO_EMPLOYEE;
+    return null;
   });
 
   // Fetch live data from backend on mount
@@ -337,19 +302,27 @@ export const AppProvider = ({ children }) => {
     }
   ]);
   
-  // All Users (for admin)
-  const [allUsers, setAllUsers] = useState([
-    { id: 'EMP1001', name: 'Rohit Sharma', empId: 'SMG-2024-042', dept: 'Assembly', role: 'Senior Technician', email: 'rohit.sharma@smg.com', phone: '+91 98765 43210', status: 'Active', joinDate: '2020-01-10', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit' },
-    { id: 'EMP1025', name: 'Priya Sharma', empId: 'SMG-2019-125', dept: 'Quality Control', role: 'QC Inspector', email: 'priya.sharma@smg.com', phone: '+91 98765 43211', status: 'Active', joinDate: '2019-03-15', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya' },
-    { id: 'EMP1089', name: 'Amit Patel', empId: 'SMG-2020-089', dept: 'Engineering', role: 'Design Engineer', email: 'amit.patel@smg.com', phone: '+91 98765 43212', status: 'Active', joinDate: '2020-07-20', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amit' },
-    { id: 'EMP1156', name: 'Sneha Gupta', empId: 'SMG-2021-156', dept: 'Sales & Marketing', role: 'Marketing Manager', email: 'sneha.gupta@smg.com', phone: '+91 98765 43213', status: 'Active', joinDate: '2021-02-05', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha' },
-    { id: 'EMP1234', name: 'Vikram Singh', empId: 'SMG-2019-234', dept: 'R&D', role: 'Research Scientist', email: 'vikram.singh@smg.com', phone: '+91 98765 43214', status: 'Active', joinDate: '2019-09-12', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram' },
-    { id: 'EMP1067', name: 'Anita Desai', empId: 'SMG-2020-067', dept: 'Administration', role: 'Admin Officer', email: 'anita.desai@smg.com', phone: '+91 98765 43215', status: 'Active', joinDate: '2020-04-18', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Anita' },
-    { id: 'EMP1145', name: 'Rohit Verma', empId: 'SMG-2017-145', dept: 'Production', role: 'Production Manager', email: 'rohit.verma@smg.com', phone: '+91 98765 43216', status: 'Active', joinDate: '2017-11-22', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RohitV' },
-    { id: 'EMP1278', name: 'Kavita Joshi', empId: 'SMG-2018-278', dept: 'HR', role: 'HR Manager', email: 'kavita.joshi@smg.com', phone: '+91 98765 43217', status: 'Active', joinDate: '2018-06-30', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kavita' },
-    { id: 'EMP1312', name: 'Suresh Reddy', empId: 'SMG-2021-312', dept: 'Finance', role: 'Accountant', email: 'suresh.reddy@smg.com', phone: '+91 98765 43218', status: 'Active', joinDate: '2021-08-14', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Suresh' },
-    { id: 'EMP1401', name: 'Meena Iyer', empId: 'SMG-2022-401', dept: 'IT', role: 'System Administrator', email: 'meena.iyer@smg.com', phone: '+91 98765 43219', status: 'Active', joinDate: '2022-01-25', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meena' }
-  ]);
+  // All Users (loaded from API)
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  // Load users from API
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await api.getUsers();
+        if (Array.isArray(data)) {
+          setAllUsers(data.map((u: any) => ({
+            id: u._id, name: u.name, empId: u.empId, dept: u.dept,
+            role: u.designation || u.role, email: u.email, phone: u.phone,
+            status: u.isActive !== false ? 'Active' : 'Inactive',
+            joinDate: u.dateOfJoining || '',
+            avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=0B4DA2&color=fff`
+          })));
+        }
+      } catch (err) { console.error('Failed to load users:', err); }
+    };
+    loadUsers();
+  }, []);
   
   // Training State
   const [trainings, setTrainings] = useState([

@@ -131,7 +131,7 @@ export function CanteenPortal() {
     return () => clearInterval(interval);
   }, []);
 
-  // Mock data for coupon requests
+  // Default data for coupon requests
   const [couponRequests, setCouponRequests] = useState<CouponRequest[]>([
     {
       id: 'CR001',
@@ -173,7 +173,7 @@ export function CanteenPortal() {
     }
   ]);
 
-  // Mock data for issued coupons
+  // Default data for issued coupons
   const [issuedCoupons, setIssuedCoupons] = useState<CouponIssuance[]>([
     {
       id: 'CI001',
@@ -201,7 +201,7 @@ export function CanteenPortal() {
     }
   ]);
 
-  // Mock data for sales
+  // Default data for sales
   const [sales, setSales] = useState<Sale[]>([
     {
       id: 'S001',

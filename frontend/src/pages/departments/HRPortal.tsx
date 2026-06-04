@@ -1,71 +1,80 @@
 // HR Portal - Complete with team-provided components
-import { useState, useEffect, useMemo } from 'react';
-
-// ============ MOCK DATA ============
-const hrUsers = [
-    { id: 'EMP1001', name: 'Rajesh Kumar', dept: 'Production', role: 'Senior Operator', contact: '+91 98765 43210', status: 'Active' },
-    { id: 'EMP1025', name: 'Priya Sharma', dept: 'Quality Control', role: 'QC Inspector', contact: '+91 98765 43211', status: 'Active' },
-    { id: 'EMP1103', name: 'Anil Mehta', dept: 'R&D', role: 'Engineer', contact: '+91 98765 43212', status: 'Inactive' },
-    { id: 'EMP1045', name: 'Sunita Verma', dept: 'HR', role: 'HR Executive', contact: '+91 98765 43213', status: 'Active' },
-    { id: 'EMP1078', name: 'Vikram Singh', dept: 'Assembly', role: 'Technician', contact: '+91 98765 43214', status: 'Active' },
-];
-
-const hrRequests = [
-    { id: 'REQ-001', type: 'Leave', employee: 'Rajesh Kumar', date: '2025-01-05', days: 3, status: 'Pending', reason: 'Family function' },
-    { id: 'REQ-002', type: 'WFH', employee: 'Priya Sharma', date: '2025-01-02', days: 1, status: 'Approved', reason: 'Personal work' },
-    { id: 'REQ-003', type: 'Leave', employee: 'Anil Mehta', date: '2025-01-10', days: 5, status: 'Pending', reason: 'Medical' },
-];
-
-const hrTrainings = [
-    { id: 'TRN-001', name: 'Safety Training', trainer: 'External', date: '2025-01-15', participants: 25, status: 'Scheduled' },
-    { id: 'TRN-002', name: 'Quality Control Basics', trainer: 'Internal', date: '2025-01-20', participants: 15, status: 'Scheduled' },
-];
-
-const hrAnnouncements = [
-    { id: 'ANN-001', title: 'New Year Holiday', date: '2025-01-01', content: 'Office closed on Jan 1st, 2025.' },
-    { id: 'ANN-002', title: 'Annual Review', date: '2025-01-10', content: 'Annual performance review starts from Jan 10th.' },
-];
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { parseResume, createEmployee, getUsers, getAdminRequests, getTrainings, getAnnouncements, updateUser, approveRequest, rejectRequest } from '../../services/api';
 
 // ============ HOOKS ============
-function useMockApi(key: string, initialData: any[]) {
-    const storageKey = `mock:${key}`;
-    const [data, setData] = useState(() => {
-        try {
-            const raw = localStorage.getItem(storageKey);
-            return raw ? JSON.parse(raw) : initialData;
-        } catch {
-            return initialData;
-        }
-    });
+function useDataStore(key: string) {
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(data));
-        } catch { }
-    }, [data, storageKey]);
-
-    const delay = (ms = 450) => new Promise(res => setTimeout(res, ms));
+        let mounted = true;
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                let res;
+                if (key === 'hr:users') res = await getUsers();
+                else if (key === 'hr:requests') res = await getAdminRequests();
+                else if (key === 'hr:trainings') res = await getTrainings();
+                else if (key === 'hr:announcements') res = await getAnnouncements();
+                
+                if (mounted && res) {
+                    if (key === 'hr:users') {
+                        setData(res.map((u: any) => ({
+                            id: u.empId || u._id,
+                            _id: u._id,
+                            name: u.name,
+                            dept: u.dept,
+                            role: u.role,
+                            contact: u.phone || '-',
+                            salary: u.salary || '-',
+                            status: u.isActive ? 'Active' : 'Inactive'
+                        })));
+                    } else if (key === 'hr:requests') {
+                         setData(res.map((r: any) => ({
+                             id: r._id,
+                             type: r.type,
+                             employee: r.user?.name || 'Unknown User',
+                             date: new Date(r.createdAt).toLocaleDateString(),
+                             days: r.duration || 1,
+                             status: r.status,
+                             reason: r.reason || r.description || '-'
+                         })));
+                    } else if (key === 'hr:trainings') {
+                        setData(res.map((t: any) => ({
+                            id: t._id,
+                            name: t.title,
+                            trainer: t.instructor || 'Internal',
+                            date: new Date(t.date || t.createdAt).toLocaleDateString(),
+                            participants: (t.enrolledUsers || []).length,
+                            status: 'Scheduled'
+                        })));
+                    } else if (key === 'hr:announcements') {
+                        setData(res.map((a: any) => ({
+                            id: a._id,
+                            title: a.title,
+                            date: new Date(a.date || a.createdAt).toLocaleDateString(),
+                            content: a.content || a.message
+                        })));
+                    }
+                }
+            } catch (err) { console.error('Failed to fetch', key, err); }
+            finally { if (mounted) setLoading(false); }
+        };
+        fetchData();
+        return () => { mounted = false; };
+    }, [key]);
 
     const api = useMemo(() => ({
         async add(item: any) {
-            setLoading(true);
-            await delay();
-            setData((prev: any[]) => [...prev, item]);
-            setLoading(false);
+            setData((prev: any[]) => [item, ...prev]);
             return item;
         },
         async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
-            setLoading(true);
-            await delay();
             setData((prev: any[]) => prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it)));
-            setLoading(false);
         },
         async remove(matchFn: (it: any) => boolean) {
-            setLoading(true);
-            await delay();
             setData((prev: any[]) => prev.filter(it => !matchFn(it)));
-            setLoading(false);
         },
     }), []);
 
@@ -189,8 +198,9 @@ function Modal({ open, title, onClose, children }: { open: boolean; title: strin
 
 // ============ PORTAL VIEWS ============
 function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
-    const userData = useMockApi('hr:users', hrUsers).data;
-    const requestData = useMockApi('hr:requests', hrRequests).data;
+    const userData = useDataStore('hr:users').data;
+    const requestData = useDataStore('hr:requests').data;
+    const trainingData = useDataStore('hr:trainings').data;
 
     return (
         <div>
@@ -199,34 +209,85 @@ function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
                 <StatCard title="Total Employees" value={userData.length} onClick={() => onTabChange('users')} />
                 <StatCard title="Active" value={userData.filter((u: any) => u.status === 'Active').length} />
                 <StatCard title="Pending Requests" value={requestData.filter((r: any) => r.status === 'Pending').length} badge={{ type: 'warning', label: 'Action Required' }} onClick={() => onTabChange('requests')} />
-                <StatCard title="Trainings" value={hrTrainings.length} onClick={() => onTabChange('training')} />
+                <StatCard title="Trainings" value={trainingData.length} onClick={() => onTabChange('training')} />
             </div>
         </div>
     );
 }
 
 function UserManagementView() {
-    const { data, api } = useMockApi('hr:users', hrUsers);
+    const { data, api } = useDataStore('hr:users');
     const [query, setQuery] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
+    const [isParsing, setIsParsing] = useState(false);
     const filtered = useSearch(data, ['name', 'dept', 'role', 'status'], query);
+
+    const [formState, setFormState] = useState({ name: '', email: '', dept: '', role: '', contact: '', salary: '' });
+
+    const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsParsing(true);
+        try {
+            const formData = new FormData();
+            formData.append('resume', file);
+            const res = await parseResume(formData);
+            if (res.success && res.data) {
+                setFormState(prev => ({
+                    ...prev,
+                    name: res.data.name || prev.name,
+                    email: res.data.email || prev.email,
+                    dept: res.data.suggestedDepartment || prev.dept,
+                    role: res.data.suggestedRole || prev.role,
+                    contact: res.data.phone || prev.contact
+                    // Salary is intentionally omitted here so it must be added by the user manually
+                }));
+            }
+        } catch (err) {
+            alert('Failed to parse resume');
+        } finally {
+            setIsParsing(false);
+        }
+    };
 
     const onCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const form = new FormData(e.currentTarget);
-        const name = String(form.get('name') || '').trim();
-        const dept = String(form.get('dept') || '').trim();
-        const role = String(form.get('role') || '').trim();
-        const contact = String(form.get('contact') || '').trim();
-        if (!name || !dept) return;
-        const id = `EMP${Math.floor(1000 + Math.random() * 9000)}`;
-        await api.add({ id, name, dept, role, contact, status: 'Active' });
-        setCreateOpen(false);
-        e.currentTarget.reset();
+        const { name, email, dept, role, contact, salary } = formState;
+        if (!name || !email || !dept) {
+            alert('Name, Email, and Department are required.');
+            return;
+        }
+        
+        try {
+            // Live API integration: Creates credentials and sends auto-email
+            const newDbUser = await createEmployee({
+                name, email, dept, role: role || 'employee', phone: contact, salary
+            });
+            
+            // Still sync with local HR list for immediate display
+            await api.add({ 
+                id: newDbUser.empId || newDbUser._id, 
+                name, dept, role, contact, salary, status: 'Active' 
+            });
+            
+            setCreateOpen(false);
+            setFormState({ name: '', email: '', dept: '', role: '', contact: '', salary: '' });
+            alert(`Success! Account created for ${name}. An email has been sent to them with their secure login credentials.`);
+        } catch (err: any) {
+            alert(`Failed to create employee: ${err.message}`);
+        }
     };
 
     const toggleStatus = async (id: string) => {
-        await api.update((u: any) => u.id === id, (u: any) => ({ status: u.status === 'Active' ? 'Inactive' : 'Active' }));
+        try {
+            const user = data.find((u: any) => u.id === id);
+            if (user && user._id) {
+                const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+                await updateUser(user._id, { isActive: newStatus === 'Active' });
+                await api.update((u: any) => u.id === id, (u: any) => ({ status: newStatus }));
+            }
+        } catch (e) { alert('Failed to update status'); }
     };
 
     return (
@@ -246,6 +307,7 @@ function UserManagementView() {
                         <th style={{ textAlign: 'left', padding: 12 }}>Department</th>
                         <th style={{ textAlign: 'left', padding: 12 }}>Role</th>
                         <th style={{ textAlign: 'left', padding: 12 }}>Contact</th>
+                        <th style={{ textAlign: 'left', padding: 12 }}>Salary</th>
                         <th style={{ textAlign: 'left', padding: 12 }}>Status</th>
                         <th style={{ textAlign: 'left', padding: 12 }}>Actions</th>
                     </tr></thead>
@@ -257,6 +319,7 @@ function UserManagementView() {
                                 <td style={{ padding: 12 }}>{u.dept}</td>
                                 <td style={{ padding: 12 }}>{u.role}</td>
                                 <td style={{ padding: 12 }}>{u.contact}</td>
+                                <td style={{ padding: 12 }}>{u.salary || '-'}</td>
                                 <td style={{ padding: 12 }}><span style={{ background: u.status === 'Active' ? '#dcfce7' : '#fee2e2', color: u.status === 'Active' ? '#15803d' : '#dc2626', padding: '4px 8px', borderRadius: 4, fontSize: 12 }}>{u.status}</span></td>
                                 <td style={{ padding: 12 }}>
                                     <button onClick={() => toggleStatus(u.id)} style={{ padding: '4px 8px', cursor: 'pointer', marginRight: 4 }}>{u.status === 'Active' ? 'Deactivate' : 'Activate'}</button>
@@ -268,15 +331,26 @@ function UserManagementView() {
             </div>
 
             <Modal open={createOpen} title="Add Employee" onClose={() => setCreateOpen(false)}>
+                <div style={{ marginBottom: 16, padding: 12, background: '#F4F7FE', borderRadius: 8, border: '1px solid #cce3ff' }}>
+                    <div style={{ fontWeight: 600, color: '#0B4DA2', marginBottom: 8, fontSize: 14 }}>🤖 AI Resume Auto-Fill</div>
+                    <label style={{ display: 'inline-block', background: '#fff', border: '1px solid #0B4DA2', color: '#0B4DA2', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                        {isParsing ? 'Parsing Document...' : 'Upload PDF / DOCX'}
+                        <input type="file" style={{ display: 'none' }} accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
+                    </label>
+                </div>
                 <form onSubmit={onCreate} style={{ display: 'grid', gap: 12 }}>
                     <label style={{ fontWeight: 600 }}>Name</label>
-                    <input name="name" placeholder="Full Name" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <input value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} placeholder="Full Name" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <label style={{ fontWeight: 600 }}>Email</label>
+                    <input value={formState.email} type="email" onChange={e => setFormState({...formState, email: e.target.value})} placeholder="Email Address (Required)" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
                     <label style={{ fontWeight: 600 }}>Department</label>
-                    <input name="dept" placeholder="Department" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <input value={formState.dept} onChange={e => setFormState({...formState, dept: e.target.value})} placeholder="Department" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
                     <label style={{ fontWeight: 600 }}>Role</label>
-                    <input name="role" placeholder="Role" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <input value={formState.role} onChange={e => setFormState({...formState, role: e.target.value})} placeholder="Role" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
                     <label style={{ fontWeight: 600 }}>Contact</label>
-                    <input name="contact" placeholder="+91 98765 43210" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <input value={formState.contact} onChange={e => setFormState({...formState, contact: e.target.value})} placeholder="+91 98765 43210" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
+                    <label style={{ fontWeight: 600 }}>Proposed Salary</label>
+                    <input value={formState.salary} onChange={e => setFormState({...formState, salary: e.target.value})} placeholder="e.g. 12,00,000 INR" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                         <button type="submit" style={{ background: '#0B4DA2', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}>Save</button>
                         <button type="button" onClick={() => setCreateOpen(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}>Cancel</button>
@@ -288,12 +362,18 @@ function UserManagementView() {
 }
 
 function RequestsView() {
-    const { data, api } = useMockApi('hr:requests', hrRequests);
+    const { data, api } = useDataStore('hr:requests');
     const approve = async (id: string) => {
-        await api.update((r: any) => r.id === id, () => ({ status: 'Approved' }));
+        try {
+            await approveRequest(id);
+            await api.update((r: any) => r.id === id, () => ({ status: 'Approved' }));
+        } catch (e) { alert('Failed to approve request'); }
     };
     const reject = async (id: string) => {
-        await api.update((r: any) => r.id === id, () => ({ status: 'Rejected' }));
+        try {
+            await rejectRequest(id, 'Rejected by HR');
+            await api.update((r: any) => r.id === id, () => ({ status: 'Rejected' }));
+        } catch (e) { alert('Failed to reject request'); }
     };
 
     return (
@@ -341,7 +421,7 @@ function AttendanceView() {
 }
 
 function TrainingView() {
-    const { data } = useMockApi('hr:trainings', hrTrainings);
+    const { data } = useDataStore('hr:trainings');
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Training Management</h2></div>
@@ -361,11 +441,12 @@ function TrainingView() {
 }
 
 function AnalyticsView() {
+    const { data } = useDataStore('hr:users');
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Department Analytics</h2></div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <StatCard title="Total Headcount" value={hrUsers.length} />
+                <StatCard title="Total Headcount" value={data.length} />
                 <StatCard title="Avg. Attendance" value="94%" />
                 <StatCard title="Training Completion" value="87%" />
             </div>
@@ -378,7 +459,7 @@ function AnalyticsView() {
 }
 
 function AnnouncementsView() {
-    const { data } = useMockApi('hr:announcements', hrAnnouncements);
+    const { data } = useDataStore('hr:announcements');
     return (
         <div>
             <div style={{ marginBottom: 24 }}><h2 style={{ margin: 0 }}>Announcements</h2></div>
