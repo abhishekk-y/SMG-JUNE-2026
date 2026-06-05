@@ -86,6 +86,12 @@ interface Notification {
 }
 
 export function TimeOfficePortal() {
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -245,7 +251,7 @@ export function TimeOfficePortal() {
         <div className="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#1B254B]">Good Morning, Time Office 👋</h1>
+              <h1 className="text-2xl font-bold text-[#1B254B]">{getGreeting()}, Time Office</h1>
               <p className="text-sm text-gray-500 mt-1">Attendance tracking & shift management</p>
             </div>
 

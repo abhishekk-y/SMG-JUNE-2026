@@ -86,6 +86,12 @@ interface UniformStock {
 }
 
 export function UniformPortal() {
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewRequestDialog, setShowNewRequestDialog] = useState(false);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
@@ -368,7 +374,7 @@ export function UniformPortal() {
         <div className="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#1B254B]">Good Morning, Uniform Desk 👋</h1>
+              <h1 className="text-2xl font-bold text-[#1B254B]">{getGreeting()}, Uniform Desk</h1>
               <p className="text-sm text-gray-500 mt-1">Uniform distribution & stock management</p>
             </div>
 

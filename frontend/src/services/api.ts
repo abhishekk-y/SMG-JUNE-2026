@@ -373,6 +373,12 @@ export const applyGatePassWithNotification = (data: any) =>
     apiFetch('/gatepasses/apply', { method: 'POST', body: JSON.stringify(data) });
 export const approveGatePass = (id: string) =>
     apiFetch(`/gatepasses/${id}/approve`, { method: 'PUT' });
+export const rejectGatePass = (id: string, reason: string) =>
+    apiFetch(`/gatepasses/${id}/reject`, { method: 'PUT', body: JSON.stringify({ reason }) });
+export const cancelGatePass = (id: string) =>
+    apiFetch(`/gatepasses/${id}/cancel`, { method: 'PUT' });
+export const getGatePassStats = (userId: string) =>
+    apiFetch(`/gatepasses/${userId}/stats`);
 export const approveRequest = (id: string) =>
     apiFetch(`/requests/${id}/approve`, { method: 'PUT' });
 export const rejectRequest = (id: string, reason: string) =>

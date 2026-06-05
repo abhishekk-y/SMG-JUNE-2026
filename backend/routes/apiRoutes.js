@@ -403,7 +403,21 @@ router.get('/gatepasses/:userId', async (req, res) => {
     catch (err) { res.status(500).json({ message: err.message }); }
 });
 router.post('/gatepasses', async (req, res) => {
-    try { res.status(201).json(await GatePass.create(req.body)); }
+    try {
+        if (!req.body.passId) {
+            const count = await GatePass.countDocuments();
+            req.body.passId = `GP-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
+        }
+        const gp = await GatePass.create(req.body);
+        await Notification.create({
+            user: gp.user,
+            title: 'Gate Pass Submitted',
+            message: `Your gate pass request (${gp.passId}) has been submitted and is pending approval.`,
+            type: 'info',
+            category: 'Gate Pass'
+        });
+        res.status(201).json(gp);
+    }
     catch (err) { res.status(500).json({ message: err.message }); }
 });
 router.put('/gatepasses/:id', async (req, res) => {
@@ -412,8 +426,8 @@ router.put('/gatepasses/:id', async (req, res) => {
         if (req.body.status && gatePass.user) {
             await Notification.create({
                 user: gatePass.user,
-                title: 'Gate Pass Status Updated',
-                message: `Your gate pass request has been ${req.body.status}.`,
+                title: `Gate Pass ${req.body.status}`,
+                message: `Your gate pass request (${gatePass.passId}) has been ${req.body.status.toLowerCase()}.`,
                 type: req.body.status === 'Approved' ? 'success' : 'warning',
                 category: 'Gate Pass'
             });
@@ -1137,6 +1151,68 @@ router.put('/dept-store/:key', async (req, res) => {
             if (notifications.length > 0) {
                 await Notification.insertMany(notifications);
             }
+
+            // Send HR email notification if a new interview candidate is registered or visitor candidate checked in
+            const newItems = record.items.slice(oldLength);
+            if (req.params.key === 'reception:interviewCandidates') {
+                for (const item of newItems) {
+                    const emailHtml = `
+                        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                            <div style="background:linear-gradient(135deg,#0B4DA2,#042A5B);padding:24px;color:white;text-align:center">
+                                <h1 style="margin:0;font-size:24px">📋 New Interview Candidate Registered</h1>
+                            </div>
+                            <div style="padding:24px">
+                                <p>Dear HR Team,</p>
+                                <p>A new interview candidate has been registered at the Reception Desk:</p>
+                                <table style="width:100%;border-collapse:collapse;margin:16px 0">
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Candidate Name</td><td style="padding:8px;border:1px solid #e5e7eb">${item.candidateName || 'N/A'}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Position Applied</td><td style="padding:8px;border:1px solid #e5e7eb">${item.position || 'N/A'}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Department</td><td style="padding:8px;border:1px solid #e5e7eb">${item.department || 'N/A'}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Interviewer</td><td style="padding:8px;border:1px solid #e5e7eb">${item.interviewerName || 'N/A'}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Date & Time</td><td style="padding:8px;border:1px solid #e5e7eb">${item.interviewDate || 'N/A'} at ${item.interviewTime || 'N/A'}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Phone</td><td style="padding:8px;border:1px solid #e5e7eb">${item.phone || 'N/A'}</td></tr>
+                                </table>
+                                <p style="color:#6b7280;font-size:13px">Please prepare the necessary interview materials and coordinate accordingly.</p>
+                            </div>
+                            <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">SMG Employee Management Portal</div>
+                        </div>
+                    `;
+                    try {
+                        await sendEmail('tuskydv@gmail.com', `New Interview Candidate: ${item.candidateName || 'N/A'}`, emailHtml);
+                    } catch (err) {
+                        console.error('Failed to send interview candidate email to HR:', err);
+                    }
+                }
+            } else if (req.params.key === 'reception:visitors') {
+                for (const item of newItems) {
+                    if (item.visitorType === 'candidate') {
+                        const emailHtml = `
+                            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                                <div style="background:linear-gradient(135deg,#0B4DA2,#042A5B);padding:24px;color:white;text-align:center">
+                                    <h1 style="margin:0;font-size:24px">🚶 Candidate Visitor Check-In</h1>
+                                </div>
+                                <div style="padding:24px">
+                                    <p>Dear HR Team,</p>
+                                    <p>A visitor of type <strong>candidate</strong> has checked in at the Reception Desk:</p>
+                                    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+                                        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Visitor Name</td><td style="padding:8px;border:1px solid #e5e7eb">${item.name || 'N/A'}</td></tr>
+                                        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Company/Source</td><td style="padding:8px;border:1px solid #e5e7eb">${item.company || 'N/A'}</td></tr>
+                                        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Person to Visit</td><td style="padding:8px;border:1px solid #e5e7eb">${item.visitingPerson || 'N/A'} (${item.department || 'N/A'})</td></tr>
+                                        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Purpose</td><td style="padding:8px;border:1px solid #e5e7eb">${item.purpose || 'N/A'}</td></tr>
+                                        <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Check-In Time</td><td style="padding:8px;border:1px solid #e5e7eb">${item.checkInTime || 'N/A'} on ${item.date || 'N/A'}</td></tr>
+                                    </table>
+                                </div>
+                                <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">SMG Employee Management Portal</div>
+                            </div>
+                        `;
+                        try {
+                            await sendEmail('tuskydv@gmail.com', `Candidate Checked-In: ${item.name || 'N/A'}`, emailHtml);
+                        } catch (err) {
+                            console.error('Failed to send visitor candidate check-in email to HR:', err);
+                        }
+                    }
+                }
+            }
         }
 
         res.json(record.items);
@@ -1215,16 +1291,58 @@ router.put('/leaves/:id/reject', async (req, res) => {
 
 router.post('/gatepasses/apply', async (req, res) => {
     try {
+        if (!req.body.passId) {
+            const count = await GatePass.countDocuments();
+            req.body.passId = `GP-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`;
+        }
         const gp = await GatePass.create(req.body);
-        await createNotification(req.body.user, 'Gate Pass Submitted', 'Your gate pass request has been submitted and is pending approval.', 'info');
+        await createNotification(req.body.user, 'Gate Pass Submitted', `Your gate pass (${gp.passId}) has been submitted and is pending approval.`, 'info');
         res.status(201).json(gp);
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 router.put('/gatepasses/:id/approve', async (req, res) => {
     try {
-        const gp = await GatePass.findByIdAndUpdate(req.params.id, { status: 'Approved' }, { new: true });
-        if (gp) await createNotification(gp.user, 'Gate Pass Approved', 'Your gate pass has been approved.', 'success');
+        const gp = await GatePass.findByIdAndUpdate(req.params.id, { status: 'Approved', approver: req.body.approver || 'Admin' }, { new: true });
+        if (gp) {
+            await createNotification(gp.user, 'Gate Pass Approved', `Your gate pass (${gp.passId}) has been approved. You may proceed.`, 'success');
+            // Send email notification if SMTP is configured
+            try {
+                const user = await User.findById(gp.user);
+                if (user && user.email) {
+                    await sendEmail(
+                        user.email,
+                        `Gate Pass Approved - ${gp.passId}`,
+                        `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                            <div style="background:linear-gradient(135deg,#042A5B,#0B4DA2);padding:24px;color:white;text-align:center">
+                                <h1 style="margin:0;font-size:24px">✅ Gate Pass Approved</h1>
+                            </div>
+                            <div style="padding:24px">
+                                <p>Dear <strong>${user.name}</strong>,</p>
+                                <p>Your gate pass request has been <strong style="color:#16a34a">approved</strong>.</p>
+                                <table style="width:100%;border-collapse:collapse;margin:16px 0">
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Pass ID</td><td style="padding:8px;border:1px solid #e5e7eb">${gp.passId}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Type</td><td style="padding:8px;border:1px solid #e5e7eb">${gp.type}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Date</td><td style="padding:8px;border:1px solid #e5e7eb">${new Date(gp.date).toLocaleDateString('en-IN')}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Exit Time</td><td style="padding:8px;border:1px solid #e5e7eb">${gp.outTime}</td></tr>
+                                    <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold">Return Time</td><td style="padding:8px;border:1px solid #e5e7eb">${gp.inTime || 'N/A'}</td></tr>
+                                </table>
+                                <p style="color:#6b7280;font-size:13px">Please carry this approval confirmation. Have a safe journey.</p>
+                            </div>
+                            <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">SMG Employee Management Portal</div>
+                        </div>`
+                    );
+                }
+            } catch (emailErr) { console.error('Gate pass email error:', emailErr.message); }
+        }
+        res.json(gp);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.put('/gatepasses/:id/reject', async (req, res) => {
+    try {
+        const gp = await GatePass.findByIdAndUpdate(req.params.id, { status: 'Rejected' }, { new: true });
+        if (gp) await createNotification(gp.user, 'Gate Pass Rejected', `Your gate pass (${gp.passId}) has been rejected. Reason: ${req.body.reason || 'Not specified'}`, 'warning');
         res.json(gp);
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -1259,6 +1377,36 @@ router.get('/system/health', async (_req, res) => {
             version: '2.0.0'
         });
     } catch (err) { res.status(500).json({ status: 'unhealthy', message: err.message }); }
+});
+
+// ════════════════════════════════════════
+//  GATE PASS — CANCEL & STATISTICS
+// ════════════════════════════════════════
+router.put('/gatepasses/:id/cancel', async (req, res) => {
+    try {
+        const gp = await GatePass.findById(req.params.id);
+        if (!gp) return res.status(404).json({ message: 'Gate Pass not found' });
+        if (gp.status !== 'Pending') return res.status(400).json({ message: 'Only pending gate passes can be cancelled' });
+        gp.status = 'Rejected';
+        await gp.save();
+        await createNotification(gp.user, 'Gate Pass Cancelled', `Your gate pass (${gp.passId}) has been cancelled by you.`, 'info');
+        res.json(gp);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/gatepasses/:userId/stats', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const [total, approved, pending, rejected, completed] = await Promise.all([
+            GatePass.countDocuments({ user: userId }),
+            GatePass.countDocuments({ user: userId, status: 'Approved' }),
+            GatePass.countDocuments({ user: userId, status: 'Pending' }),
+            GatePass.countDocuments({ user: userId, status: 'Rejected' }),
+            GatePass.countDocuments({ user: userId, status: 'Completed' })
+        ]);
+        const recent = await GatePass.find({ user: userId }).sort({ createdAt: -1 }).limit(1);
+        res.json({ total, approved, pending, rejected, completed, lastPassDate: recent[0]?.createdAt || null });
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 module.exports = router;

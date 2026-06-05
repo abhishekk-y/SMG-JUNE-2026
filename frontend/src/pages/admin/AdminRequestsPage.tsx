@@ -54,24 +54,19 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
   });
 
   const handleApprove = (req) => {
-    // Determine the endpoint based on the request type
     let endpoint = '';
-    if (req.type === 'Leave Request') endpoint = `/api/leaves/${req.id}`;
-    if (req.type === 'Gate Pass') endpoint = `/api/gatepasses/${req.id}`;
+    if (req.type === 'Leave Request') endpoint = `/api/leaves/${req.id}/approve`;
+    else if (req.type === 'Gate Pass') endpoint = `/api/gatepasses/${req.id}/approve`;
+    else endpoint = `/api/requests/${req.id}/approve`;
 
-    if (endpoint) {
-      fetch(`http://localhost:5000${endpoint}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Approved' })
-      }).then(() => {
-        setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r));
-        setSelectedRequest(null);
-      }).catch(console.error);
-    } else {
-      alert(`Approved request ${req.id} for ${req.employee}`);
+    fetch(`http://localhost:5000${endpoint}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    }).then(() => {
+      setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r));
       setSelectedRequest(null);
-    }
+    }).catch(console.error);
   };
 
   const handleReject = (req) => {
@@ -81,26 +76,20 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
   const handleRejectWithComment = () => {
     if (comment.trim() && selectedRequest) {
       let endpoint = '';
-      if (selectedRequest.type === 'Leave Request') endpoint = `/api/leaves/${selectedRequest.id}`;
-      if (selectedRequest.type === 'Gate Pass') endpoint = `/api/gatepasses/${selectedRequest.id}`;
+      if (selectedRequest.type === 'Leave Request') endpoint = `/api/leaves/${selectedRequest.id}/reject`;
+      else if (selectedRequest.type === 'Gate Pass') endpoint = `/api/gatepasses/${selectedRequest.id}/reject`;
+      else endpoint = `/api/requests/${selectedRequest.id}/reject`;
 
-      if (endpoint) {
-        fetch(`http://localhost:5000${endpoint}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'Rejected', rejectionReason: comment })
-        }).then(() => {
-          setRequests(requests.map(r => r.id === selectedRequest.id ? { ...r, status: 'Rejected', rejectionReason: comment } : r));
-          setShowCommentModal(false);
-          setComment('');
-          setSelectedRequest(null);
-        }).catch(console.error);
-      } else {
-        alert(`Rejected request ${selectedRequest.id} with reason: ${comment}`);
+      fetch(`http://localhost:5000${endpoint}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: comment })
+      }).then(() => {
+        setRequests(requests.map(r => r.id === selectedRequest.id ? { ...r, status: 'Rejected', rejectionReason: comment } : r));
         setShowCommentModal(false);
         setComment('');
         setSelectedRequest(null);
-      }
+      }).catch(console.error);
     }
   };
 

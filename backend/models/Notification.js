@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema({
     title: { type: String, required: true },
     message: { type: String, required: true },
     type: { type: String, enum: ['success', 'info', 'warning', 'error'], default: 'info' },
-    category: { type: String, enum: ['Leave', 'Training', 'Payroll', 'System', 'Announcement', 'Request', 'Other'], default: 'Other' },
+    category: { type: String, enum: ['Leave', 'Training', 'Payroll', 'System', 'Announcement', 'Request', 'Other', 'Gate Pass'], default: 'Other' },
     isRead: { type: Boolean, default: false },
     link: { type: String }
 }, { timestamps: true });

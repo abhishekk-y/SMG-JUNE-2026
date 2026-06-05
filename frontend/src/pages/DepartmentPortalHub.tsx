@@ -222,11 +222,11 @@ export function DepartmentPortalHub() {
     const dept = departments.find(d => d.id === activeDepartment);
     if (!dept) return;
     // Department credential validation
-    if (loginId.trim() && loginPassword.trim()) {
+    if (loginId.trim() === dept.email && loginPassword === dept.password) {
       setIsLoggedIn(true);
       setLoginError('');
     } else {
-      setLoginError('Please enter both ID and password');
+      setLoginError('Invalid User ID or Password');
     }
   };
 

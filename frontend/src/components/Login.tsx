@@ -284,7 +284,7 @@ export function Login({ onLogin }: LoginProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
           >
-            <p>Don't have an account? <a href="#" className="text-[#0B4DA2] hover:underline">Contact HR</a></p>
+            <p>Don't have an account? <a href="mailto:smgmotoremployeeportal@gmail.com" className="text-[#0B4DA2] hover:underline">Contact HR</a></p>
           </motion.div>
         </motion.div>
       </div>

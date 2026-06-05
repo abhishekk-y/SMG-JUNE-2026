@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 import { 
   Building2, 
   UserPlus, 
@@ -176,6 +177,321 @@ interface Notification {
   priority: 'high' | 'medium' | 'low';
 }
 
+const initialVisitors: Visitor[] = [
+  {
+    id: 'V001',
+    name: 'Rajesh Kumar',
+    company: 'Tech Solutions Pvt Ltd',
+    phone: '+91 98765 43210',
+    email: 'rajesh@techsolutions.com',
+    visitingPerson: 'Amit Patel',
+    department: 'IT',
+    purpose: 'Software Demo and Technical Discussion',
+    checkInTime: '10:30 AM',
+    status: 'in-meeting',
+    visitorType: 'vendor',
+    date: '2024-12-17',
+    idProof: 'Aadhaar Card',
+    idProofNumber: 'XXXX-XXXX-5678',
+    vehicleNumber: 'DL 01 AB 1234',
+    badgeNumber: 'B-042',
+    temperature: '98.2°F',
+    materialsBrought: 'Laptop, Demo Materials',
+    escortedBy: 'Amit Patel'
+  },
+  {
+    id: 'V002',
+    name: 'Priya Sharma',
+    company: 'HR Consultants',
+    phone: '+91 98765 43211',
+    email: 'priya@hrconsultants.com',
+    visitingPerson: 'Sneha Reddy',
+    department: 'HR',
+    purpose: 'Interview for Senior Manager Position',
+    checkInTime: '11:00 AM',
+    status: 'waiting',
+    visitorType: 'candidate',
+    date: '2024-12-17',
+    idProof: 'PAN Card',
+    idProofNumber: 'ABCDE1234F',
+    badgeNumber: 'B-043',
+    temperature: '98.0°F',
+    materialsBrought: 'Resume, Certificates'
+  },
+  {
+    id: 'V003',
+    name: 'Vikram Singh',
+    company: 'ABC Industries',
+    phone: '+91 98765 43212',
+    email: 'vikram@abcindustries.com',
+    visitingPerson: 'Rohit Sharma',
+    department: 'Assembly',
+    purpose: 'Client Meeting - Quality Review',
+    checkInTime: '09:00 AM',
+    checkOutTime: '10:30 AM',
+    status: 'checked-out',
+    visitorType: 'client',
+    date: '2024-12-17',
+    idProof: 'Driving License',
+    idProofNumber: 'DL-1234567890',
+    vehicleNumber: 'DL 02 CD 5678',
+    badgeNumber: 'B-041',
+    temperature: '98.4°F',
+    materialsBrought: 'Documents',
+    escortedBy: 'Rohit Sharma',
+    remarks: 'Quality inspection completed successfully'
+  }
+];
+
+const initialCorporateGuests: CorporateGuest[] = [
+  {
+    id: 'CG001',
+    guestName: 'Mr. Anil Kapoor',
+    company: 'Global Manufacturing Ltd',
+    designation: 'CEO',
+    phone: '+91 98765 11111',
+    email: 'anil.kapoor@globalmanuf.com',
+    visitingPerson: 'Managing Director',
+    department: 'Management',
+    hodName: 'Mr. Suresh Kumar (MD)',
+    purpose: 'Business Partnership Discussion',
+    visitDate: '2024-12-20',
+    visitTime: '2:00 PM',
+    numberOfGuests: 3,
+    status: 'pending',
+    requestedBy: 'Management Office'
+  },
+  {
+    id: 'CG002',
+    guestName: 'Ms. Meera Patel',
+    company: 'Tech Innovations Inc',
+    designation: 'Director - Operations',
+    phone: '+91 98765 22222',
+    email: 'meera@techinnovations.com',
+    visitingPerson: 'IT Head',
+    department: 'IT',
+    hodName: 'Mr. Ramesh Singh (IT HOD)',
+    purpose: 'Technology Infrastructure Review',
+    visitDate: '2024-12-21',
+    visitTime: '11:00 AM',
+    numberOfGuests: 2,
+    status: 'approved',
+    requestedBy: 'IT Department',
+    approvalDate: '2024-12-18'
+  }
+];
+
+const initialInterviewCandidates: InterviewCandidate[] = [
+  {
+    id: 'IC001',
+    candidateName: 'Rahul Verma',
+    phone: '+91 98765 33333',
+    email: 'rahul.verma@email.com',
+    position: 'Senior Software Engineer',
+    department: 'IT',
+    interviewDate: '2024-12-19',
+    interviewTime: '10:00 AM',
+    interviewerName: 'Mr. Amit Patel',
+    hrName: 'Ms. Sneha Reddy',
+    status: 'pending',
+    requestedBy: 'HR Department'
+  },
+  {
+    id: 'IC002',
+    candidateName: 'Kavita Sharma',
+    phone: '+91 98765 44444',
+    email: 'kavita.sharma@email.com',
+    position: 'HR Manager',
+    department: 'HR',
+    interviewDate: '2024-12-20',
+    interviewTime: '3:00 PM',
+    interviewerName: 'Ms. Priya Gupta',
+    hrName: 'Ms. Sneha Reddy',
+    status: 'approved',
+    requestedBy: 'HR Department'
+  }
+];
+
+const initialGovernmentOfficials: GovernmentOfficial[] = [
+  {
+    id: 'GO001',
+    officialName: 'Mr. Rajesh Khanna',
+    designation: 'Joint Secretary',
+    ministry: 'Ministry of Commerce & Industry',
+    phone: '+91 98765 55555',
+    email: 'rajesh.khanna@gov.in',
+    visitingPerson: 'Managing Director',
+    department: 'Management',
+    purpose: 'Industrial Compliance Inspection',
+    visitDate: '2024-12-22',
+    visitTime: '11:00 AM',
+    numberOfOfficials: 5,
+    securityClearance: 'pending',
+    status: 'pending',
+    requestedBy: 'Management Office',
+    hodName: 'Managing Director'
+  }
+];
+
+const initialKeys: KeyInfo[] = [
+  {
+    id: 'K001',
+    keyNumber: 'MR-101',
+    location: 'Main Conference Room',
+    keyType: 'Room Key',
+    status: 'available'
+  },
+  {
+    id: 'K002',
+    keyNumber: 'SR-201',
+    location: 'Server Room',
+    keyType: 'High Security',
+    issuedTo: 'Amit Patel',
+    issuedDate: '2024-12-18',
+    status: 'issued',
+    authorizedBy: 'IT Head'
+  },
+  {
+    id: 'K003',
+    keyNumber: 'ST-301',
+    location: 'Storage Room 3',
+    keyType: 'Storage',
+    status: 'available'
+  }
+];
+
+const initialKeyPersons: KeyPerson[] = [
+  {
+    id: 'KP001',
+    name: 'Mr. Suresh Kumar',
+    designation: 'Managing Director',
+    department: 'Management',
+    phone: '+91 98765 00001',
+    email: 'md@smg.com',
+    accessLevel: 'high',
+    specialInstructions: 'Always escort to MD office directly. Immediate priority.',
+    emergencyContact: '+91 98765 00002'
+  },
+  {
+    id: 'KP002',
+    name: 'Ms. Anjali Desai',
+    designation: 'Chief Financial Officer',
+    department: 'Finance',
+    phone: '+91 98765 00003',
+    email: 'cfo@smg.com',
+    accessLevel: 'high',
+    specialInstructions: 'Notify Finance team upon arrival.',
+    emergencyContact: '+91 98765 00004'
+  },
+  {
+    id: 'KP003',
+    name: 'Mr. Ramesh Singh',
+    designation: 'IT Head',
+    department: 'IT',
+    phone: '+91 98765 00005',
+    email: 'ithead@smg.com',
+    accessLevel: 'medium',
+    specialInstructions: 'Has server room access. Verify ID always.'
+  }
+];
+
+const initialNotifications: Notification[] = [
+  {
+    id: 'N001',
+    type: 'corporate',
+    message: 'New corporate guest approval request from Management',
+    time: '5 mins ago',
+    read: false,
+    priority: 'high'
+  },
+  {
+    id: 'N002',
+    type: 'interview',
+    message: 'Interview candidate scheduled for tomorrow - Rahul Verma',
+    time: '15 mins ago',
+    read: false,
+    priority: 'medium'
+  },
+  {
+    id: 'N003',
+    type: 'government',
+    message: 'Government official visit pending security clearance',
+    time: '1 hour ago',
+    read: false,
+    priority: 'high'
+  },
+  {
+    id: 'N004',
+    type: 'key',
+    message: 'Server room key issued to Amit Patel',
+    time: '2 hours ago',
+    read: true,
+    priority: 'low'
+  }
+];
+
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const dataRef = useRef<any[]>([]);
+
+    useEffect(() => {
+        dataRef.current = data;
+    }, [data]);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted) {
+                if (res && Array.isArray(res) && res.length > 0) {
+                    setData(res);
+                } else if (initialData) {
+                    setData(initialData);
+                    saveDeptStore(key, initialData);
+                }
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            const newData = [item, ...dataRef.current];
+            setData(newData);
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async addEnd(item: any) {
+            setLoading(true);
+            const newData = [...dataRef.current, item];
+            setData(newData);
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            const newData = dataRef.current.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+            setData(newData);
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            const newData = dataRef.current.filter(it => !matchFn(it));
+            setData(newData);
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
 export function ReceptionPortal() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewVisitorDialog, setShowNewVisitorDialog] = useState(false);
@@ -190,6 +506,13 @@ export function ReceptionPortal() {
   const [showIssueKeyDialog, setShowIssueKeyDialog] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [visitorTypeFilter, setVisitorTypeFilter] = useState<string>('all');
@@ -213,260 +536,73 @@ export function ReceptionPortal() {
     issuedTo: '',
     authorizedBy: ''
   });
+  
+  const [corporateGuestForm, setCorporateGuestForm] = useState({
+    guestName: '',
+    company: '',
+    designation: '',
+    phone: '',
+    email: '',
+    visitingPerson: '',
+    department: 'Management',
+    hodName: '',
+    purpose: '',
+    visitDate: new Date().toISOString().split('T')[0],
+    visitTime: '12:00 PM',
+    numberOfGuests: 1,
+    requestedBy: 'Reception'
+  });
 
-  const [visitors, setVisitors] = useState<Visitor[]>([
-    {
-      id: 'V001',
-      name: 'Rajesh Kumar',
-      company: 'Tech Solutions Pvt Ltd',
-      phone: '+91 98765 43210',
-      email: 'rajesh@techsolutions.com',
-      visitingPerson: 'Amit Patel',
-      department: 'IT',
-      purpose: 'Software Demo and Technical Discussion',
-      checkInTime: '10:30 AM',
-      status: 'in-meeting',
-      visitorType: 'vendor',
-      date: '2024-12-17',
-      idProof: 'Aadhaar Card',
-      idProofNumber: 'XXXX-XXXX-5678',
-      vehicleNumber: 'DL 01 AB 1234',
-      badgeNumber: 'B-042',
-      temperature: '98.2°F',
-      materialsBrought: 'Laptop, Demo Materials',
-      escortedBy: 'Amit Patel'
-    },
-    {
-      id: 'V002',
-      name: 'Priya Sharma',
-      company: 'HR Consultants',
-      phone: '+91 98765 43211',
-      email: 'priya@hrconsultants.com',
-      visitingPerson: 'Sneha Reddy',
-      department: 'HR',
-      purpose: 'Interview for Senior Manager Position',
-      checkInTime: '11:00 AM',
-      status: 'waiting',
-      visitorType: 'candidate',
-      date: '2024-12-17',
-      idProof: 'PAN Card',
-      idProofNumber: 'ABCDE1234F',
-      badgeNumber: 'B-043',
-      temperature: '98.0°F',
-      materialsBrought: 'Resume, Certificates'
-    },
-    {
-      id: 'V003',
-      name: 'Vikram Singh',
-      company: 'ABC Industries',
-      phone: '+91 98765 43212',
-      email: 'vikram@abcindustries.com',
-      visitingPerson: 'Rohit Sharma',
-      department: 'Assembly',
-      purpose: 'Client Meeting - Quality Review',
-      checkInTime: '09:00 AM',
-      checkOutTime: '10:30 AM',
-      status: 'checked-out',
-      visitorType: 'client',
-      date: '2024-12-17',
-      idProof: 'Driving License',
-      idProofNumber: 'DL-1234567890',
-      vehicleNumber: 'DL 02 CD 5678',
-      badgeNumber: 'B-041',
-      temperature: '98.4°F',
-      materialsBrought: 'Documents',
-      escortedBy: 'Rohit Sharma',
-      remarks: 'Quality inspection completed successfully'
-    }
-  ]);
+  const [interviewCandidateForm, setInterviewCandidateForm] = useState({
+    candidateName: '',
+    phone: '',
+    email: '',
+    position: '',
+    department: 'IT',
+    interviewDate: new Date().toISOString().split('T')[0],
+    interviewTime: '10:00 AM',
+    interviewerName: '',
+    hrName: '',
+    requestedBy: 'Reception'
+  });
 
-  const [corporateGuests, setCorporateGuests] = useState<CorporateGuest[]>([
-    {
-      id: 'CG001',
-      guestName: 'Mr. Anil Kapoor',
-      company: 'Global Manufacturing Ltd',
-      designation: 'CEO',
-      phone: '+91 98765 11111',
-      email: 'anil.kapoor@globalmanuf.com',
-      visitingPerson: 'Managing Director',
-      department: 'Management',
-      hodName: 'Mr. Suresh Kumar (MD)',
-      purpose: 'Business Partnership Discussion',
-      visitDate: '2024-12-20',
-      visitTime: '2:00 PM',
-      numberOfGuests: 3,
-      status: 'pending',
-      requestedBy: 'Management Office'
-    },
-    {
-      id: 'CG002',
-      guestName: 'Ms. Meera Patel',
-      company: 'Tech Innovations Inc',
-      designation: 'Director - Operations',
-      phone: '+91 98765 22222',
-      email: 'meera@techinnovations.com',
-      visitingPerson: 'IT Head',
-      department: 'IT',
-      hodName: 'Mr. Ramesh Singh (IT HOD)',
-      purpose: 'Technology Infrastructure Review',
-      visitDate: '2024-12-21',
-      visitTime: '11:00 AM',
-      numberOfGuests: 2,
-      status: 'approved',
-      requestedBy: 'IT Department',
-      approvalDate: '2024-12-18'
-    }
-  ]);
+  const [governmentOfficialForm, setGovernmentOfficialForm] = useState({
+    officialName: '',
+    designation: '',
+    ministry: '',
+    phone: '',
+    email: '',
+    visitingPerson: '',
+    department: 'Management',
+    purpose: '',
+    visitDate: new Date().toISOString().split('T')[0],
+    visitTime: '11:00 AM',
+    numberOfOfficials: 1,
+    hodName: '',
+    requestedBy: 'Reception'
+  });  // Synchronized database stores
+  const [keyPersonForm, setKeyPersonForm] = useState({
+    name: '',
+    designation: '',
+    department: '',
+    phone: '',
+    email: '',
+    accessLevel: 'medium' as 'high' | 'medium' | 'low',
+    specialInstructions: '',
+    emergencyContact: ''
+  });
 
-  const [interviewCandidates, setInterviewCandidates] = useState<InterviewCandidate[]>([
-    {
-      id: 'IC001',
-      candidateName: 'Rahul Verma',
-      phone: '+91 98765 33333',
-      email: 'rahul.verma@email.com',
-      position: 'Senior Software Engineer',
-      department: 'IT',
-      interviewDate: '2024-12-19',
-      interviewTime: '10:00 AM',
-      interviewerName: 'Mr. Amit Patel',
-      hrName: 'Ms. Sneha Reddy',
-      status: 'pending',
-      requestedBy: 'HR Department'
-    },
-    {
-      id: 'IC002',
-      candidateName: 'Kavita Sharma',
-      phone: '+91 98765 44444',
-      email: 'kavita.sharma@email.com',
-      position: 'HR Manager',
-      department: 'HR',
-      interviewDate: '2024-12-20',
-      interviewTime: '3:00 PM',
-      interviewerName: 'Ms. Priya Gupta',
-      hrName: 'Ms. Sneha Reddy',
-      status: 'approved',
-      requestedBy: 'HR Department'
-    }
-  ]);
+  const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
+  const [selectedKeyPerson, setSelectedKeyPerson] = useState<any | null>(null);
+  const [editNoteForm, setEditNoteForm] = useState('');
 
-  const [governmentOfficials, setGovernmentOfficials] = useState<GovernmentOfficial[]>([
-    {
-      id: 'GO001',
-      officialName: 'Mr. Rajesh Khanna',
-      designation: 'Joint Secretary',
-      ministry: 'Ministry of Commerce & Industry',
-      phone: '+91 98765 55555',
-      email: 'rajesh.khanna@gov.in',
-      visitingPerson: 'Managing Director',
-      department: 'Management',
-      purpose: 'Industrial Compliance Inspection',
-      visitDate: '2024-12-22',
-      visitTime: '11:00 AM',
-      numberOfOfficials: 5,
-      securityClearance: 'pending',
-      status: 'pending',
-      requestedBy: 'Management Office',
-      hodName: 'Managing Director'
-    }
-  ]);
-
-  const [keys, setKeys] = useState<KeyInfo[]>([
-    {
-      id: 'K001',
-      keyNumber: 'MR-101',
-      location: 'Main Conference Room',
-      keyType: 'Room Key',
-      status: 'available'
-    },
-    {
-      id: 'K002',
-      keyNumber: 'SR-201',
-      location: 'Server Room',
-      keyType: 'High Security',
-      issuedTo: 'Amit Patel',
-      issuedDate: '2024-12-18',
-      status: 'issued',
-      authorizedBy: 'IT Head'
-    },
-    {
-      id: 'K003',
-      keyNumber: 'ST-301',
-      location: 'Storage Room 3',
-      keyType: 'Storage',
-      status: 'available'
-    }
-  ]);
-
-  const [keyPersons, setKeyPersons] = useState<KeyPerson[]>([
-    {
-      id: 'KP001',
-      name: 'Mr. Suresh Kumar',
-      designation: 'Managing Director',
-      department: 'Management',
-      phone: '+91 98765 00001',
-      email: 'md@smg.com',
-      accessLevel: 'high',
-      specialInstructions: 'Always escort to MD office directly. Immediate priority.',
-      emergencyContact: '+91 98765 00002'
-    },
-    {
-      id: 'KP002',
-      name: 'Ms. Anjali Desai',
-      designation: 'Chief Financial Officer',
-      department: 'Finance',
-      phone: '+91 98765 00003',
-      email: 'cfo@smg.com',
-      accessLevel: 'high',
-      specialInstructions: 'Notify Finance team upon arrival.',
-      emergencyContact: '+91 98765 00004'
-    },
-    {
-      id: 'KP003',
-      name: 'Mr. Ramesh Singh',
-      designation: 'IT Head',
-      department: 'IT',
-      phone: '+91 98765 00005',
-      email: 'ithead@smg.com',
-      accessLevel: 'medium',
-      specialInstructions: 'Has server room access. Verify ID always.'
-    }
-  ]);
-
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 'N001',
-      type: 'corporate',
-      message: 'New corporate guest approval request from Management',
-      time: '5 mins ago',
-      read: false,
-      priority: 'high'
-    },
-    {
-      id: 'N002',
-      type: 'interview',
-      message: 'Interview candidate scheduled for tomorrow - Rahul Verma',
-      time: '15 mins ago',
-      read: false,
-      priority: 'medium'
-    },
-    {
-      id: 'N003',
-      type: 'government',
-      message: 'Government official visit pending security clearance',
-      time: '1 hour ago',
-      read: false,
-      priority: 'high'
-    },
-    {
-      id: 'N004',
-      type: 'key',
-      message: 'Server room key issued to Amit Patel',
-      time: '2 hours ago',
-      read: true,
-      priority: 'low'
-    }
-  ]);
-
+  const { data: visitors, setData: setVisitors, api: visitorsApi } = useDataStore('reception:visitors', initialVisitors);
+  const { data: corporateGuests, setData: setCorporateGuests, api: corporateGuestsApi } = useDataStore('reception:corporateGuests', initialCorporateGuests);
+  const { data: interviewCandidates, setData: setInterviewCandidates, api: interviewCandidatesApi } = useDataStore('reception:interviewCandidates', initialInterviewCandidates);
+  const { data: governmentOfficials, setData: setGovernmentOfficials, api: governmentOfficialsApi } = useDataStore('reception:governmentOfficials', initialGovernmentOfficials);
+  const { data: keys, setData: setKeys, api: keysApi } = useDataStore('reception:keys', initialKeys);
+  const { data: keyPersons, setData: setKeyPersons, api: keyPersonsApi } = useDataStore('reception:keyPersons', initialKeyPersons);
+  const { data: notifications, setData: setNotifications, api: notificationsApi } = useDataStore('reception:notifications', initialNotifications);
   const receptionProfile = {
     name: 'Reception Desk',
     email: 'reception@smg.com',
@@ -523,41 +659,82 @@ export function ReceptionPortal() {
       badgeNumber: `B-${String(Math.floor(Math.random() * 100) + 40).padStart(3, '0')}`,
       temperature: '98.2°F'
     };
-    setVisitors(prev => [newVisitor, ...prev]);
+    visitorsApi.add(newVisitor);
     toast.success(`Visitor ${formData.name} checked in successfully! Badge: ${newVisitor.badgeNumber}`);
     setShowNewVisitorDialog(false);
   };
 
-  const handleApprove = (visitorId: string) => {
-    setVisitors(prev =>
-      prev.map(v =>
-        v.id === visitorId ? { ...v, status: 'in-meeting' as const } : v
-      )
+  const handleAddCorporateGuest = () => {
+    const newGuest = {
+      id: `CG${String(corporateGuests.length + 1).padStart(3, '0')}`,
+      ...corporateGuestForm,
+      status: 'approved' as const
+    };
+    corporateGuestsApi.add(newGuest);
+    toast.success(`Corporate Guest ${newGuest.guestName} registered successfully`);
+    setShowCorporateGuestDialog(false);
+  };
+
+  const handleAddInterviewCandidate = () => {
+    const newCandidate = {
+      id: `IC${String(interviewCandidates.length + 1).padStart(3, '0')}`,
+      ...interviewCandidateForm,
+      status: 'approved' as const
+    };
+    interviewCandidatesApi.add(newCandidate);
+    toast.success(`Interview Candidate ${newCandidate.candidateName} registered successfully`);
+    setShowInterviewCandidateDialog(false);
+  };
+
+  const handleAddGovernmentOfficial = () => {
+    const newOfficial = {
+      id: `GO${String(governmentOfficials.length + 1).padStart(3, '0')}`,
+      ...governmentOfficialForm,
+      securityClearance: 'approved' as const,
+      status: 'approved' as const
+    };
+    governmentOfficialsApi.add(newOfficial);
+    toast.success(`Government Official ${newOfficial.officialName} registered successfully`);
+    setShowGovernmentOfficialDialog(false);
+  };
+
+  const handleAddKeyPerson = () => {
+    const newPerson = {
+      id: `KP${String(keyPersons.length + 1).padStart(3, '0')}`,
+      ...keyPersonForm
+    };
+    keyPersonsApi.add(newPerson);
+    toast.success(`Key Person ${newPerson.name} added successfully`);
+    setShowKeyPersonDialog(false);
+  };
+
+  const handleSaveNote = () => {
+    if (!selectedKeyPerson) return;
+    keyPersonsApi.update(
+      kp => kp.id === selectedKeyPerson.id,
+      () => ({ specialInstructions: editNoteForm })
     );
+    toast.success(`Special instructions for ${selectedKeyPerson.name} updated`);
+    setShowEditNoteDialog(false);
+  };
+
+  const handleApprove = (visitorId: string) => {
+    visitorsApi.update(v => v.id === visitorId, () => ({ status: 'in-meeting' as const }));
     const visitor = visitors.find(v => v.id === visitorId);
     toast.success(`${visitor?.name} approved and moved to meeting area`);
   };
 
   const handleCheckOut = (visitorId: string) => {
-    setVisitors(prev =>
-      prev.map(v =>
-        v.id === visitorId ? { 
-          ...v, 
-          status: 'checked-out' as const,
-          checkOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        } : v
-      )
-    );
+    visitorsApi.update(v => v.id === visitorId, () => ({ 
+      status: 'checked-out' as const,
+      checkOutTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    }));
     const visitor = visitors.find(v => v.id === visitorId);
     toast.success(`${visitor?.name} checked out successfully. Badge ${visitor?.badgeNumber} collected.`);
   };
 
   const handleReject = (visitorId: string) => {
-    setVisitors(prev =>
-      prev.map(v =>
-        v.id === visitorId ? { ...v, status: 'rejected' as const } : v
-      )
-    );
+    visitorsApi.update(v => v.id === visitorId, () => ({ status: 'rejected' as const }));
     const visitor = visitors.find(v => v.id === visitorId);
     toast.error(`Visitor request for ${visitor?.name} has been rejected`);
   };
@@ -568,97 +745,65 @@ export function ReceptionPortal() {
   };
 
   const handleApproveCorporateGuest = (guestId: string) => {
-    setCorporateGuests(prev =>
-      prev.map(g =>
-        g.id === guestId ? { ...g, status: 'approved' as const, approvalDate: new Date().toISOString().split('T')[0] } : g
-      )
-    );
+    corporateGuestsApi.update(g => g.id === guestId, () => ({ status: 'approved' as const, approvalDate: new Date().toISOString().split('T')[0] }));
     toast.success('Corporate guest request approved');
   };
 
   const handleRejectCorporateGuest = (guestId: string) => {
-    setCorporateGuests(prev =>
-      prev.map(g =>
-        g.id === guestId ? { ...g, status: 'rejected' as const } : g
-      )
-    );
+    corporateGuestsApi.update(g => g.id === guestId, () => ({ status: 'rejected' as const }));
     toast.error('Corporate guest request rejected');
   };
 
   const handleApproveInterviewCandidate = (candidateId: string) => {
-    setInterviewCandidates(prev =>
-      prev.map(c =>
-        c.id === candidateId ? { ...c, status: 'approved' as const } : c
-      )
-    );
+    interviewCandidatesApi.update(c => c.id === candidateId, () => ({ status: 'approved' as const }));
     toast.success('Interview candidate approved');
   };
 
   const handleRejectInterviewCandidate = (candidateId: string) => {
-    setInterviewCandidates(prev =>
-      prev.map(c =>
-        c.id === candidateId ? { ...c, status: 'rejected' as const } : c
-      )
-    );
+    interviewCandidatesApi.update(c => c.id === candidateId, () => ({ status: 'rejected' as const }));
     toast.error('Interview candidate rejected');
   };
 
   const handleApproveGovernmentOfficial = (officialId: string) => {
-    setGovernmentOfficials(prev =>
-      prev.map(o =>
-        o.id === officialId ? { ...o, status: 'approved' as const, securityClearance: 'approved' as const } : o
-      )
-    );
+    governmentOfficialsApi.update(o => o.id === officialId, () => ({ status: 'approved' as const, securityClearance: 'approved' as const }));
     toast.success('Government official visit approved with security clearance');
   };
 
   const handleRejectGovernmentOfficial = (officialId: string) => {
-    setGovernmentOfficials(prev =>
-      prev.map(o =>
-        o.id === officialId ? { ...o, status: 'rejected' as const, securityClearance: 'rejected' as const } : o
-      )
-    );
+    governmentOfficialsApi.update(o => o.id === officialId, () => ({ status: 'rejected' as const, securityClearance: 'rejected' as const }));
     toast.error('Government official visit rejected');
   };
 
   const handleIssueKey = (formData: any) => {
-    setKeys(prev =>
-      prev.map(k =>
-        k.keyNumber === formData.keyNumber ? {
-          ...k,
-          issuedTo: formData.issuedTo,
-          issuedDate: new Date().toISOString().split('T')[0],
-          status: 'issued' as const,
-          authorizedBy: formData.authorizedBy
-        } : k
-      )
+    keysApi.update(
+      k => k.keyNumber === formData.keyNumber,
+      () => ({
+        issuedTo: formData.issuedTo,
+        issuedDate: new Date().toISOString().split('T')[0],
+        status: 'issued' as const,
+        authorizedBy: formData.authorizedBy
+      })
     );
     toast.success(`Key ${formData.keyNumber} issued to ${formData.issuedTo}`);
     setShowIssueKeyDialog(false);
   };
 
   const handleReturnKey = (keyId: string) => {
-    setKeys(prev =>
-      prev.map(k =>
-        k.id === keyId ? {
-          ...k,
-          issuedTo: undefined,
-          issuedDate: undefined,
-          returnDate: new Date().toISOString().split('T')[0],
-          status: 'available' as const,
-          authorizedBy: undefined
-        } : k
-      )
+    keysApi.update(
+      k => k.id === keyId,
+      () => ({
+        issuedTo: undefined,
+        issuedDate: undefined,
+        returnDate: new Date().toISOString().split('T')[0],
+        status: 'available' as const,
+        authorizedBy: undefined
+      })
     );
     toast.success('Key returned successfully');
   };
 
   const markNotificationAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === notificationId ? { ...n, read: true } : n
-      )
-    );
+    notificationsApi.update(n => n.id === notificationId, () => ({ read: true }));
   };
 
   const handleLogout = () => {
@@ -748,18 +893,20 @@ export function ReceptionPortal() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
         <div className="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[#1B254B]">Good Morning, Reception Desk 👋</h1>
+              <h1 className="text-2xl font-bold text-[#1B254B]">{getGreeting()}, Reception Desk</h1>
               <p className="text-sm text-gray-500 mt-1">Visitor management & front desk operations</p>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <div className="relative w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder="Search anything..."
-                  className="pl-10 w-80 border-gray-200"
+                  placeholder="Search visitors, departments, keys..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-72 border-gray-200"
                 />
               </div>
               <Button
@@ -877,7 +1024,20 @@ export function ReceptionPortal() {
                 <Card className="p-6 border-gray-100 shadow-md">
                   <h3 className="text-[#1B254B] font-bold text-lg mb-4">Recent Activity</h3>
                   <div className="space-y-3">
-                    {visitors.slice(0, 5).map((visitor) => (
+                    {visitors
+                      .filter(v => {
+                        if (!searchQuery.trim()) return true;
+                        const query = searchQuery.toLowerCase();
+                        return (
+                          v.name.toLowerCase().includes(query) ||
+                          v.company.toLowerCase().includes(query) ||
+                          v.visitingPerson.toLowerCase().includes(query) ||
+                          (v.badgeNumber && v.badgeNumber.toLowerCase().includes(query)) ||
+                          v.visitorType.toLowerCase().includes(query)
+                        );
+                      })
+                      .slice(0, 5)
+                      .map((visitor) => (
                       <div key={visitor.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all cursor-pointer"
                         onClick={() => handleViewDetails(visitor)}
                       >
@@ -937,7 +1097,20 @@ export function ReceptionPortal() {
           {activeTab === 'corporate' && (
             <div className="space-y-4">
               <div className="space-y-4">
-                {corporateGuests.map((guest) => (
+                {corporateGuests
+                  .filter(guest => {
+                    if (!searchQuery.trim()) return true;
+                    const query = searchQuery.toLowerCase();
+                    return (
+                      guest.guestName.toLowerCase().includes(query) ||
+                      guest.company.toLowerCase().includes(query) ||
+                      guest.designation.toLowerCase().includes(query) ||
+                      guest.visitingPerson.toLowerCase().includes(query) ||
+                      guest.purpose.toLowerCase().includes(query) ||
+                      guest.department.toLowerCase().includes(query)
+                    );
+                  })
+                  .map((guest) => (
                   <Card key={guest.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -1013,7 +1186,19 @@ export function ReceptionPortal() {
 
           {activeTab === 'interview' && (
             <div className="space-y-4">
-              {interviewCandidates.map((candidate) => (
+              {interviewCandidates
+                .filter(candidate => {
+                  if (!searchQuery.trim()) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    candidate.candidateName.toLowerCase().includes(query) ||
+                    candidate.position.toLowerCase().includes(query) ||
+                    candidate.department.toLowerCase().includes(query) ||
+                    candidate.interviewerName.toLowerCase().includes(query) ||
+                    candidate.hrName.toLowerCase().includes(query)
+                  );
+                })
+                .map((candidate) => (
                 <Card key={candidate.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -1083,7 +1268,20 @@ export function ReceptionPortal() {
 
           {activeTab === 'government' && (
             <div className="space-y-4">
-              {governmentOfficials.map((official) => (
+              {governmentOfficials
+                .filter(official => {
+                  if (!searchQuery.trim()) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    official.officialName.toLowerCase().includes(query) ||
+                    official.designation.toLowerCase().includes(query) ||
+                    official.ministry.toLowerCase().includes(query) ||
+                    official.visitingPerson.toLowerCase().includes(query) ||
+                    official.purpose.toLowerCase().includes(query) ||
+                    official.department.toLowerCase().includes(query)
+                  );
+                })
+                .map((official) => (
                 <Card key={official.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -1176,7 +1374,19 @@ export function ReceptionPortal() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {keys.map((key) => (
+                {keys
+                  .filter(key => {
+                    if (!searchQuery.trim()) return true;
+                    const query = searchQuery.toLowerCase();
+                    return (
+                      key.keyNumber.toLowerCase().includes(query) ||
+                      key.location.toLowerCase().includes(query) ||
+                      key.keyType.toLowerCase().includes(query) ||
+                      (key.issuedTo && key.issuedTo.toLowerCase().includes(query)) ||
+                      (key.authorizedBy && key.authorizedBy.toLowerCase().includes(query))
+                    );
+                  })
+                  .map((key) => (
                   <Card key={key.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -1237,7 +1447,18 @@ export function ReceptionPortal() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {keyPersons.map((person) => (
+                {keyPersons
+                  .filter(person => {
+                    if (!searchQuery.trim()) return true;
+                    const query = searchQuery.toLowerCase();
+                    return (
+                      person.name.toLowerCase().includes(query) ||
+                      person.designation.toLowerCase().includes(query) ||
+                      person.department.toLowerCase().includes(query) ||
+                      (person.specialInstructions && person.specialInstructions.toLowerCase().includes(query))
+                    );
+                  })
+                  .map((person) => (
                   <Card key={person.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                     <div className="flex items-start gap-4 mb-4">
                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] text-white flex items-center justify-center text-2xl font-bold">
@@ -1270,12 +1491,26 @@ export function ReceptionPortal() {
                       </div>
                     </div>
 
-                    {person.specialInstructions && (
-                      <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                        <p className="text-xs text-gray-600 font-bold uppercase tracking-wide mb-1">Special Instructions</p>
-                        <p className="text-sm text-[#1B254B]">{person.specialInstructions}</p>
+                    <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100 mt-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-xs text-gray-600 font-bold uppercase tracking-wide">Special Instructions / Notes</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="w-6 h-6 hover:bg-yellow-100 text-gray-500 hover:text-gray-700"
+                          onClick={() => {
+                            setSelectedKeyPerson(person);
+                            setEditNoteForm(person.specialInstructions || '');
+                            setShowEditNoteDialog(true);
+                          }}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                    )}
+                      <p className="text-sm text-[#1B254B]">
+                        {person.specialInstructions || <span className="text-gray-400 italic">No instructions specified. Click edit to add notes.</span>}
+                      </p>
+                    </div>
 
                     {person.emergencyContact && (
                       <div className="mt-3 p-3 bg-red-50 rounded-lg">
@@ -1344,10 +1579,21 @@ export function ReceptionPortal() {
 
               {/* Active Visitors Grid */}
               <div className="space-y-4">
-                {visitors
-                  .filter(v => statusFilter === 'all' || v.status === statusFilter)
-                  .filter(v => visitorTypeFilter === 'all' || v.visitorType === visitorTypeFilter)
-                  .map((visitor) => (
+                 {visitors
+                   .filter(v => statusFilter === 'all' || v.status === statusFilter)
+                   .filter(v => visitorTypeFilter === 'all' || v.visitorType === visitorTypeFilter)
+                   .filter(v => {
+                     if (!searchQuery.trim()) return true;
+                     const query = searchQuery.toLowerCase();
+                     return (
+                       v.name.toLowerCase().includes(query) ||
+                       v.company.toLowerCase().includes(query) ||
+                       v.visitingPerson.toLowerCase().includes(query) ||
+                       (v.badgeNumber && v.badgeNumber.toLowerCase().includes(query)) ||
+                       v.visitorType.toLowerCase().includes(query)
+                     );
+                   })
+                   .map((visitor) => (
                     <Card key={visitor.id} className="p-6 border-gray-100 hover:shadow-lg transition-all">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-4 flex-1">
@@ -1457,6 +1703,17 @@ export function ReceptionPortal() {
                 <div className="space-y-3">
                   {visitors
                     .filter(v => v.status === 'checked-out')
+                    .filter(v => {
+                      if (!searchQuery.trim()) return true;
+                      const query = searchQuery.toLowerCase();
+                      return (
+                        v.name.toLowerCase().includes(query) ||
+                        v.company.toLowerCase().includes(query) ||
+                        v.visitingPerson.toLowerCase().includes(query) ||
+                        (v.badgeNumber && v.badgeNumber.toLowerCase().includes(query)) ||
+                        v.visitorType.toLowerCase().includes(query)
+                      );
+                    })
                     .map((visitor) => (
                       <div key={visitor.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all cursor-pointer"
                         onClick={() => handleViewDetails(visitor)}
@@ -1615,8 +1872,8 @@ export function ReceptionPortal() {
             <DialogTitle>New Visitor Check-In</DialogTitle>
             <DialogDescription>Register a new visitor entry</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <Label>Full Name *</Label>
                 <Input
@@ -1635,7 +1892,7 @@ export function ReceptionPortal() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <Label>Phone Number *</Label>
                 <Input
@@ -1654,7 +1911,7 @@ export function ReceptionPortal() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <Label>Visiting Person *</Label>
                 <Input
@@ -1712,7 +1969,7 @@ export function ReceptionPortal() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <Label>ID Proof Type *</Label>
                 <Select
@@ -1740,7 +1997,7 @@ export function ReceptionPortal() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <Label>Vehicle Number (if any)</Label>
                 <Input
@@ -2062,6 +2319,564 @@ export function ReceptionPortal() {
                 variant="outline"
                 onClick={() => setShowIssueKeyDialog(false)}
               >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Corporate Guest Registration */}
+      <Dialog open={showCorporateGuestDialog} onOpenChange={setShowCorporateGuestDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Corporate Guest</DialogTitle>
+            <DialogDescription>Add a new corporate guest entry</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Guest Name *</Label>
+                <Input
+                  value={corporateGuestForm.guestName}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, guestName: e.target.value })}
+                  placeholder="Enter guest name"
+                />
+              </div>
+              <div>
+                <Label>Company *</Label>
+                <Input
+                  value={corporateGuestForm.company}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, company: e.target.value })}
+                  placeholder="Enter company name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Designation *</Label>
+                <Input
+                  value={corporateGuestForm.designation}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, designation: e.target.value })}
+                  placeholder="e.g. CEO, Director"
+                />
+              </div>
+              <div>
+                <Label>Phone *</Label>
+                <Input
+                  value={corporateGuestForm.phone}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Email</Label>
+                <Input
+                  value={corporateGuestForm.email}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, email: e.target.value })}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <Label>Person to Visit *</Label>
+                <Input
+                  value={corporateGuestForm.visitingPerson}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, visitingPerson: e.target.value })}
+                  placeholder="Host name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Department *</Label>
+                <Input
+                  value={corporateGuestForm.department}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, department: e.target.value })}
+                  placeholder="e.g. Management, IT"
+                />
+              </div>
+              <div>
+                <Label>HOD Name *</Label>
+                <Input
+                  value={corporateGuestForm.hodName}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, hodName: e.target.value })}
+                  placeholder="HOD name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-x-6 gap-y-5">
+              <div>
+                <Label>Visit Date *</Label>
+                <Input
+                  type="date"
+                  value={corporateGuestForm.visitDate}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, visitDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Visit Time *</Label>
+                <Input
+                  value={corporateGuestForm.visitTime}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, visitTime: e.target.value })}
+                  placeholder="e.g. 2:00 PM"
+                />
+              </div>
+              <div>
+                <Label>No. of Guests *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={corporateGuestForm.numberOfGuests}
+                  onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, numberOfGuests: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Purpose of Visit *</Label>
+              <Textarea
+                value={corporateGuestForm.purpose}
+                onChange={(e) => setCorporateGuestForm({ ...corporateGuestForm, purpose: e.target.value })}
+                placeholder="Purpose of visit"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (!corporateGuestForm.guestName || !corporateGuestForm.company || !corporateGuestForm.designation ||
+                      !corporateGuestForm.phone || !corporateGuestForm.visitingPerson || !corporateGuestForm.hodName ||
+                      !corporateGuestForm.purpose) {
+                    toast.error('Please fill all required fields');
+                    return;
+                  }
+                  handleAddCorporateGuest();
+                }}
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:opacity-90 text-white"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Register Corporate Guest
+              </Button>
+              <Button variant="outline" onClick={() => setShowCorporateGuestDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Interview Candidate Registration */}
+      <Dialog open={showInterviewCandidateDialog} onOpenChange={setShowInterviewCandidateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Interview Candidate</DialogTitle>
+            <DialogDescription>Add a new interview candidate entry</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Candidate Name *</Label>
+                <Input
+                  value={interviewCandidateForm.candidateName}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, candidateName: e.target.value })}
+                  placeholder="Candidate full name"
+                />
+              </div>
+              <div>
+                <Label>Phone *</Label>
+                <Input
+                  value={interviewCandidateForm.phone}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Email</Label>
+                <Input
+                  value={interviewCandidateForm.email}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, email: e.target.value })}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <Label>Position Applied *</Label>
+                <Input
+                  value={interviewCandidateForm.position}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, position: e.target.value })}
+                  placeholder="Job position"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Department *</Label>
+                <Input
+                  value={interviewCandidateForm.department}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, department: e.target.value })}
+                  placeholder="e.g. IT, HR, QA"
+                />
+              </div>
+              <div>
+                <Label>Interviewer Name *</Label>
+                <Input
+                  value={interviewCandidateForm.interviewerName}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, interviewerName: e.target.value })}
+                  placeholder="Interviewer name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-x-6 gap-y-5">
+              <div>
+                <Label>Interview Date *</Label>
+                <Input
+                  type="date"
+                  value={interviewCandidateForm.interviewDate}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, interviewDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Interview Time *</Label>
+                <Input
+                  value={interviewCandidateForm.interviewTime}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, interviewTime: e.target.value })}
+                  placeholder="e.g. 10:00 AM"
+                />
+              </div>
+              <div>
+                <Label>HR Coordinator *</Label>
+                <Input
+                  value={interviewCandidateForm.hrName}
+                  onChange={(e) => setInterviewCandidateForm({ ...interviewCandidateForm, hrName: e.target.value })}
+                  placeholder="HR Name"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (!interviewCandidateForm.candidateName || !interviewCandidateForm.phone ||
+                      !interviewCandidateForm.position || !interviewCandidateForm.department ||
+                      !interviewCandidateForm.interviewerName || !interviewCandidateForm.hrName) {
+                    toast.error('Please fill all required fields');
+                    return;
+                  }
+                  handleAddInterviewCandidate();
+                }}
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 text-white"
+              >
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Register Candidate
+              </Button>
+              <Button variant="outline" onClick={() => setShowInterviewCandidateDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Government Official Registration */}
+      <Dialog open={showGovernmentOfficialDialog} onOpenChange={setShowGovernmentOfficialDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Government Official</DialogTitle>
+            <DialogDescription>Add a new government official entry</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Official Name *</Label>
+                <Input
+                  value={governmentOfficialForm.officialName}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, officialName: e.target.value })}
+                  placeholder="Official full name"
+                />
+              </div>
+              <div>
+                <Label>Designation *</Label>
+                <Input
+                  value={governmentOfficialForm.designation}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, designation: e.target.value })}
+                  placeholder="e.g. Joint Secretary, Inspector"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Ministry/Department *</Label>
+                <Input
+                  value={governmentOfficialForm.ministry}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, ministry: e.target.value })}
+                  placeholder="e.g. Ministry of Industry"
+                />
+              </div>
+              <div>
+                <Label>Phone *</Label>
+                <Input
+                  value={governmentOfficialForm.phone}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Email</Label>
+                <Input
+                  value={governmentOfficialForm.email}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, email: e.target.value })}
+                  placeholder="email@gov.in"
+                />
+              </div>
+              <div>
+                <Label>Person to Visit *</Label>
+                <Input
+                  value={governmentOfficialForm.visitingPerson}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, visitingPerson: e.target.value })}
+                  placeholder="Host name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Department *</Label>
+                <Input
+                  value={governmentOfficialForm.department}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, department: e.target.value })}
+                  placeholder="Host department"
+                />
+              </div>
+              <div>
+                <Label>HOD/Manager *</Label>
+                <Input
+                  value={governmentOfficialForm.hodName}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, hodName: e.target.value })}
+                  placeholder="HOD name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-x-6 gap-y-5">
+              <div>
+                <Label>Visit Date *</Label>
+                <Input
+                  type="date"
+                  value={governmentOfficialForm.visitDate}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, visitDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Visit Time *</Label>
+                <Input
+                  value={governmentOfficialForm.visitTime}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, visitTime: e.target.value })}
+                  placeholder="e.g. 11:00 AM"
+                />
+              </div>
+              <div>
+                <Label>No. of Officials *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={governmentOfficialForm.numberOfOfficials}
+                  onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, numberOfOfficials: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Purpose of Visit *</Label>
+              <Textarea
+                value={governmentOfficialForm.purpose}
+                onChange={(e) => setGovernmentOfficialForm({ ...governmentOfficialForm, purpose: e.target.value })}
+                placeholder="Describe purpose of official visit"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (!governmentOfficialForm.officialName || !governmentOfficialForm.designation ||
+                      !governmentOfficialForm.ministry || !governmentOfficialForm.phone ||
+                      !governmentOfficialForm.visitingPerson || !governmentOfficialForm.hodName ||
+                      !governmentOfficialForm.purpose) {
+                    toast.error('Please fill all required fields');
+                    return;
+                  }
+                  handleAddGovernmentOfficial();
+                }}
+                className="bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] hover:opacity-90 text-white"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Register Official
+              </Button>
+              <Button variant="outline" onClick={() => setShowGovernmentOfficialDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Add Key Person */}
+      <Dialog open={showKeyPersonDialog} onOpenChange={setShowKeyPersonDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Key Representative</DialogTitle>
+            <DialogDescription>Add a new representative authorized for keys</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Full Name *</Label>
+                <Input
+                  value={keyPersonForm.name}
+                  onChange={(e) => setKeyPersonForm({ ...keyPersonForm, name: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <Label>Designation *</Label>
+                <Input
+                  value={keyPersonForm.designation}
+                  onChange={(e) => setKeyPersonForm({ ...keyPersonForm, designation: e.target.value })}
+                  placeholder="Designation"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Department *</Label>
+                <Input
+                  value={keyPersonForm.department}
+                  onChange={(e) => setKeyPersonForm({ ...keyPersonForm, department: e.target.value })}
+                  placeholder="Department"
+                />
+              </div>
+              <div>
+                <Label>Access Level *</Label>
+                <Select
+                  value={keyPersonForm.accessLevel}
+                  onValueChange={(val: any) => setKeyPersonForm({ ...keyPersonForm, accessLevel: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="high">High Priority Access</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <Label>Phone Number *</Label>
+                <Input
+                  value={keyPersonForm.phone}
+                  onChange={(e) => setKeyPersonForm({ ...keyPersonForm, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input
+                  value={keyPersonForm.email}
+                  onChange={(e) => setKeyPersonForm({ ...keyPersonForm, email: e.target.value })}
+                  placeholder="email@example.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Emergency Contact Number</Label>
+              <Input
+                value={keyPersonForm.emergencyContact}
+                onChange={(e) => setKeyPersonForm({ ...keyPersonForm, emergencyContact: e.target.value })}
+                placeholder="Emergency contact"
+              />
+            </div>
+
+            <div>
+              <Label>Special Instructions / Notes</Label>
+              <Textarea
+                value={keyPersonForm.specialInstructions}
+                onChange={(e) => setKeyPersonForm({ ...keyPersonForm, specialInstructions: e.target.value })}
+                placeholder="Notes or authorization instructions"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (!keyPersonForm.name || !keyPersonForm.designation || !keyPersonForm.department || !keyPersonForm.phone) {
+                    toast.error('Please fill all required fields');
+                    return;
+                  }
+                  handleAddKeyPerson();
+                }}
+                className="bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] hover:opacity-90 text-white"
+              >
+                <UserCog className="w-4 h-4 mr-2" />
+                Add Key Person
+              </Button>
+              <Button variant="outline" onClick={() => setShowKeyPersonDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Edit Key Person Special Instructions */}
+      <Dialog open={showEditNoteDialog} onOpenChange={setShowEditNoteDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Notes / Special Instructions</DialogTitle>
+            <DialogDescription>
+              Update special instructions for {selectedKeyPerson?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Special Instructions / Notes</Label>
+              <Textarea
+                value={editNoteForm}
+                onChange={(e) => setEditNoteForm(e.target.value)}
+                placeholder="Enter special instructions or notes..."
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleSaveNote}
+                className="bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] hover:opacity-90"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Save Notes
+              </Button>
+              <Button variant="outline" onClick={() => setShowEditNoteDialog(false)}>
                 Cancel
               </Button>
             </div>
