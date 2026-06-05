@@ -4,6 +4,21 @@ The **SMG Reception Portal** serves as the central administrative interface for 
 
 ---
 
+## ✅ Tested Features
+
+The following Reception Portal features have been manually tested and verified:
+
+- [x] New Visitor Check-In
+- [x] Visitor Check-Out
+- [x] View Visitor Details
+- [x] Active Visitors Listing
+- [x] Print Visitor Log
+- [x] Corporate Guest Registration
+- [x] Interview Candidate Registration
+- [x] Government Official Registration
+
+> Note: Testing completed on 05-Jun-2026.
+
 ## 🛠️ Main Navigation & Sections
 
 The portal contains several key views accessible via the sidebar:
