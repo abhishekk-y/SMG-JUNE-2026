@@ -8,10 +8,12 @@ import {
   CheckCircle,
   FileText,
   Users,
-  DollarSign,
+  IndianRupee,
   Activity,
   ArrowRight
 } from 'lucide-react';
+
+import { useApp } from '../context/AppContextEnhanced';
 
 const THEME = {
   colors: {
@@ -25,25 +27,34 @@ const THEME = {
 };
 
 export const DashboardPage = ({ userData }) => {
+  const { leaveBalance, requests, trainings, attendanceHistory, notifications } = useApp();
+
+  const presentDays = attendanceHistory?.filter(a => a.status === 'Present').length || 0;
+  const totalDays = attendanceHistory?.length || 1;
+  const attendanceRate = Math.round((presentDays / totalDays) * 100);
+
   const stats = [
-    { label: 'Leave Balance', value: '12 Days', icon: Calendar, color: THEME.colors.royal, trend: '+2' },
-    { label: 'Pending Requests', value: '5', icon: FileText, color: THEME.colors.warning, trend: '-1' },
-    { label: 'Training Hours', value: '24 Hrs', icon: Award, color: THEME.colors.success, trend: '+8' },
-    { label: 'Attendance', value: '95%', icon: CheckCircle, color: THEME.colors.accent, trend: '+3%' }
+    { label: 'Leave Balance', value: `${leaveBalance?.casual?.remaining || 0} Days`, icon: Calendar, color: THEME.colors.royal, trend: 'Active' },
+    { label: 'Pending Requests', value: `${requests?.filter(r => r.status === 'Pending').length || 0}`, icon: FileText, color: THEME.colors.warning, trend: 'Review' },
+    { label: 'Trainings', value: `${trainings?.length || 0} Active`, icon: Award, color: THEME.colors.success, trend: 'Growth' },
+    { label: 'Attendance', value: `${attendanceRate}%`, icon: CheckCircle, color: THEME.colors.accent, trend: 'Good' }
   ];
 
-  const recentActivity = [
-    { id: 1, type: 'Leave Approved', desc: 'Annual Leave - Diwali Vacation', time: '2 hours ago', status: 'success' },
-    { id: 2, type: 'Training Assigned', desc: 'React Advanced Patterns', time: '5 hours ago', status: 'info' },
-    { id: 3, type: 'Payslip Generated', desc: 'October 2023 Salary', time: '1 day ago', status: 'success' },
-    { id: 4, type: 'Request Pending', desc: 'Laptop Upgrade Request', time: '2 days ago', status: 'warning' }
-  ];
+  const recentActivity = notifications?.slice(0, 4).map(n => ({
+    id: n.id || n._id,
+    type: n.title,
+    desc: n.message,
+    time: n.time || new Date(n.timestamp || Date.now()).toLocaleDateString(),
+    status: n.type || 'info'
+  })) || [];
 
-  const upcomingEvents = [
-    { id: 1, title: 'Team Meeting', date: 'Dec 15, 2024', time: '10:00 AM', type: 'Meeting' },
-    { id: 2, title: 'React Training', date: 'Dec 18, 2024', time: '2:00 PM', type: 'Training' },
-    { id: 3, title: 'Performance Review', date: 'Dec 20, 2024', time: '11:00 AM', type: 'Review' }
-  ];
+  const upcomingEvents = trainings?.slice(0, 3).map((t, idx) => ({
+    id: t.id || idx,
+    title: t.title || 'Training Program',
+    date: t.date || 'TBD',
+    time: t.duration || 'TBD',
+    type: t.type || 'Training'
+  })) || [];
 
   return (
     <div className="space-y-6">

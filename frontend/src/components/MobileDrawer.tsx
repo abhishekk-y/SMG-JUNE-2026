@@ -172,7 +172,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
               <span className="text-white font-bold text-lg">S</span>
             </div>
             <div>
-              <h3 className="text-sm" style={{ color: 'var(--smg-dark)' }}>SMG Scooters Pvt Ltd</h3>
+              <h3 className="text-sm" style={{ color: 'var(--smg-dark)' }}>SMG Electric Scooter Ltd</h3>
               <p className="text-xs text-gray-400">Admin Portal</p>
             </div>
           </div>

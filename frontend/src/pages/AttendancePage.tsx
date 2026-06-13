@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import { useApp } from '../context/AppContextEnhanced';
 
 interface AttendanceRecord {
+    id: string;
     date: string;
     checkIn: string;
     checkOut: string;
-    status: 'Present' | 'Absent' | 'Late' | 'Overtime';
-    break: string;
-    overtime: string;
+    status: 'Present' | 'Absent' | 'Late' | 'Overtime' | string;
+    hours?: string;
+    break?: string;
+    overtime?: string;
 }
 
 export const AttendancePage = () => {
+    const { attendanceHistory } = useApp();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
@@ -37,29 +41,17 @@ export const AttendancePage = () => {
 
     // Statistics
     const stats = {
-        present: 16,
-        absent: 4,
-        late: 3,
-        overtime: 5,
-        totalHours: '07h',
-        productiveHours: '06h 30m',
+        present: attendanceHistory?.filter(r => r.status === 'Present').length || 0,
+        absent: attendanceHistory?.filter(r => r.status === 'Absent' || r.status === 'Leave').length || 0,
+        late: attendanceHistory?.filter(r => r.status === 'Late').length || 0,
+        overtime: attendanceHistory?.filter(r => r.status === 'Overtime').length || 0,
+        totalHours: attendanceHistory?.reduce((acc, r) => acc + (parseInt(r.hours?.split('h')[0]) || 0), 0) + 'h',
+        productiveHours: '0h 0m',
         breakTime: '0h 30m',
-        overtimeHours: '35m'
+        overtimeHours: '0h 0m'
     };
 
-    // Attendance records
-    const attendanceRecords: AttendanceRecord[] = [
-        { date: '01 Jan 2024', checkIn: '09:00 AM', checkOut: '06:12 PM', status: 'Present', break: '20 Min', overtime: '45 Min' },
-        { date: '02 Jan 2024', checkIn: '09:00 AM', checkOut: '06:13 PM', status: 'Present', break: '50 Min', overtime: '33 Min' },
-        { date: '03 Jan 2024', checkIn: '09:00 AM', checkOut: '07:15 PM', status: 'Present', break: '03 Min', overtime: '--' },
-        { date: '04 Jan 2024', checkIn: '09:00 AM', checkOut: '08:15 PM', status: 'Present', break: '12 Min', overtime: '--' },
-        { date: '05 Jan 2024', checkIn: '09:00 AM', checkOut: '06:23 PM', status: 'Present', break: '41 Min', overtime: '50 Min' },
-        { date: '06 Jan 2024', checkIn: '09:00 AM', checkOut: '06:45 PM', status: 'Present', break: '30 Min', overtime: '20 Min' },
-        { date: '07 Jan 2024', checkIn: '09:00 AM', checkOut: '06:43 PM', status: 'Present', break: '23 Min', overtime: '10 Min' },
-        { date: '08 Jan 2024', checkIn: '09:00 AM', checkOut: '09:23 PM', status: 'Absent', break: '10 Min', overtime: '45 Min' },
-        { date: '09 Jan 2024', checkIn: '09:00 AM', checkOut: '07:13 PM', status: 'Present', break: '32 Min', overtime: '--' },
-        { date: '10 Jan 2024', checkIn: '09:00 AM', checkOut: '09:17 PM', status: 'Present', break: '14 Min', overtime: '--' },
-    ];
+    const attendanceRecords = attendanceHistory || [];
 
     const getStatusColor = (status: string) => {
         switch (status) {

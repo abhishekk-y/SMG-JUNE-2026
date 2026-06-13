@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   LayoutDashboard,
@@ -30,6 +30,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner@2.0.3';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
 const logo = '/Company Logo.jpg';
 
@@ -85,6 +86,72 @@ interface Notification {
   read: boolean;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
+const defaultRequests: Request[] = [
+    { id: 1, type: 'Leave', employee: 'Sarah Connor', empId: 'EMP002', dept: 'Product', date: '2025-01-25', duration: '2 Days', category: 'Medical', reason: 'Viral Fever. Doctor certificate attached.', status: 'Pending', appliedOn: '2025-01-20 10:30 AM' },
+    { id: 2, type: 'Gate Pass', employee: 'Mike Ross', empId: 'EMP005', dept: 'Legal', date: '2025-01-24', duration: '2 Hours', category: 'Personal', reason: 'Bank visit for loan processing.', status: 'Pending', appliedOn: '2025-01-24 09:15 AM' },
+    { id: 3, type: 'Leave', employee: 'John Doe', empId: 'EMP001', dept: 'Sales', date: '2025-01-26', duration: '1 Day', category: 'Casual', reason: 'Family function in hometown.', status: 'Pending', appliedOn: '2025-01-21 04:00 PM' },
+];
+
 export function TimeOfficePortal() {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -99,11 +166,7 @@ export function TimeOfficePortal() {
   const [showRequestHistory, setShowRequestHistory] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
-  const [requests, setRequests] = useState<Request[]>([
-    { id: 1, type: 'Leave', employee: 'Sarah Connor', empId: 'EMP002', dept: 'Product', date: '2025-01-25', duration: '2 Days', category: 'Medical', reason: 'Viral Fever. Doctor certificate attached.', status: 'Pending', appliedOn: '2025-01-20 10:30 AM' },
-    { id: 2, type: 'Gate Pass', employee: 'Mike Ross', empId: 'EMP005', dept: 'Legal', date: '2025-01-24', duration: '2 Hours', category: 'Personal', reason: 'Bank visit for loan processing.', status: 'Pending', appliedOn: '2025-01-24 09:15 AM' },
-    { id: 3, type: 'Leave', employee: 'John Doe', empId: 'EMP001', dept: 'Sales', date: '2025-01-26', duration: '1 Day', category: 'Casual', reason: 'Family function in hometown.', status: 'Pending', appliedOn: '2025-01-21 04:00 PM' },
-  ]);
+  const { data: requests, api: requestsApi } = useDataStore('timeoffice:requests', defaultRequests);
 
   const [employees] = useState<Employee[]>([
     { id: 1, name: 'Alex Johnson', empId: 'EMP-042', dept: 'Development', designation: 'Senior Developer', email: 'alex.j@company.com', phone: '+1 (555) 0123', location: 'Building A, Floor 3', joinDate: '12 Jan 2021', reportsTo: 'Sarah Connor', workingDays: 22, otHours: 4.5, totalHours: 180.5, cl: 1, ml: 0, present: 20, absent: 0, halfDays: 1, shift: 'GS', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
@@ -122,14 +185,14 @@ export function TimeOfficePortal() {
     { id: 2, text: 'Shift Morning is understaffed by 2', time: '1 hour ago', read: false },
   ]);
 
-  const handleApprove = (requestId: number) => {
-    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Approved' } : r));
+  const handleApprove = async (requestId: number) => {
+    await requestsApi.update((r: Request) => r.id === requestId, () => ({ status: 'Approved' }));
     toast.success('Request approved successfully');
     setSelectedRequest(null);
   };
 
-  const handleReject = (requestId: number) => {
-    setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Rejected' } : r));
+  const handleReject = async (requestId: number) => {
+    await requestsApi.update((r: Request) => r.id === requestId, () => ({ status: 'Rejected' }));
     toast.error('Request rejected');
     setSelectedRequest(null);
   };

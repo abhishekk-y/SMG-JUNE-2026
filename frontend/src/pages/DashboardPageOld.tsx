@@ -6,7 +6,7 @@ import {
   Coffee,
   BookOpen,
   Zap,
-  DollarSign,
+  IndianRupee,
   Truck,
   Mail,
   LifeBuoy,
@@ -457,7 +457,7 @@ export const DashboardPageOld = ({ data, onNavigate }) => {
           {[
             { label: "Leave", icon: Calendar, action: 'leaves' },
             { label: "Gate Pass", icon: LogOut, action: 'gate-pass' },
-            { label: "Payroll", icon: DollarSign, action: 'payroll' },
+            { label: "Payroll", icon: IndianRupee, action: 'payroll' },
             { label: "Projects", icon: Briefcase, action: 'projects' },
             { label: "Transport", icon: Truck, action: 'transport' },
             { label: "Mail", icon: Mail, action: 'mail' },

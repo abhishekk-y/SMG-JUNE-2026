@@ -125,9 +125,11 @@ export const AppProvider = ({ children }) => {
       try { const r = await fetch(url); return r.ok ? r.json() : null; } catch { return null; }
     };
     (async () => {
-      const [att, lv, gp, pr, tr, doc, proj, ann, notif, dept] = await Promise.all([
+      const [att, lv, lvBal, reqs, gp, pr, tr, doc, proj, ann, notif, dept] = await Promise.all([
         fetchSafe(`${API}/attendance/${userId}`),
         fetchSafe(`${API}/leaves/${userId}`),
+        fetchSafe(`${API}/leave-balance/${userId}`),
+        fetchSafe(`${API}/requests/${userId}`),
         fetchSafe(`${API}/gatepasses/${userId}`),
         fetchSafe(`${API}/payroll/${userId}`),
         fetchSafe(`${API}/trainings`),
@@ -139,10 +141,21 @@ export const AppProvider = ({ children }) => {
       ]);
       if (att) setAttendanceHistory(att.map((a: any, i: number) => ({
         id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
-        checkIn: a.checkIn, checkOut: a.checkOut, hours: a.totalHours ? `${Math.floor(a.totalHours)}h ${Math.round((a.totalHours%1)*60)}m` : '-', status: a.status
+        checkIn: a.checkIn || '-', checkOut: a.checkOut || '-', hours: a.duration || '-', status: a.status,
+        break: a.segments?.find((s:any) => s.type === 'break') ? '30m' : '-',
+        overtime: a.overtimeHours ? `${a.overtimeHours}h` : '-'
       })));
       if (lv) setLeaveRequests(lv.map((l: any) => ({
         id: l._id, type: l.type, startDate: l.from?.split('T')[0], endDate: l.to?.split('T')[0], days: l.days, reason: l.reason, status: l.status, appliedDate: l.createdAt?.split('T')[0]
+      })));
+      if (lvBal) setLeaveBalance({
+        casual: { total: lvBal.casual||12, used: lvBal.casualUsed||0, remaining: (lvBal.casual||12) - (lvBal.casualUsed||0) },
+        sick: { total: lvBal.sick||7, used: lvBal.sickUsed||0, remaining: (lvBal.sick||7) - (lvBal.sickUsed||0) },
+        earned: { total: lvBal.earned||15, used: lvBal.earnedUsed||0, remaining: (lvBal.earned||15) - (lvBal.earnedUsed||0) },
+        privilege: { total: lvBal.privilege||10, used: lvBal.privilegeUsed||0, remaining: (lvBal.privilege||10) - (lvBal.privilegeUsed||0) }
+      });
+      if (reqs) setRequests(reqs.map((r: any) => ({
+        id: r._id, employeeId: userId, type: r.type, category: r.category, reason: r.reason, date: r.createdAt?.split('T')[0], status: r.status, priority: r.priority
       })));
       if (pr) setPayslips(pr.map((p: any) => ({
         id: p._id, month: p.month, basicSalary: `₹${p.basicSalary?.toLocaleString('en-IN')}`, hra: `₹${p.hra?.toLocaleString('en-IN')}`, allowances: `₹${p.allowances?.toLocaleString('en-IN')}`,

@@ -22,10 +22,39 @@ import {
   FileText,
   Activity
 } from 'lucide-react';
+import { getProjects, createProject } from '../services/api';
 
 export const ProjectsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [dbProjects, setDbProjects] = useState<any[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newProject, setNewProject] = useState({ name: '', department: '', status: 'Planning', priority: 'Medium', budget: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const API = 'http://localhost:5000/api';
+
+  useEffect(() => {
+    getProjects()
+      .then(data => setDbProjects(data))
+      .catch(console.error);
+  }, []);
+
+  const handleAddProject = async () => {
+    if (!newProject.name) return alert('Project name is required');
+    setIsSubmitting(true);
+    try {
+      const added = await createProject({ ...newProject, startDate: new Date().toISOString() });
+      setDbProjects([added, ...dbProjects]);
+      setShowAddModal(false);
+      setNewProject({ name: '', department: '', status: 'Planning', priority: 'Medium', budget: '' });
+      alert('Project added successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to add project');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const projects = [
     {
@@ -191,9 +220,36 @@ export const ProjectsPage = () => {
     }
   ];
 
+  // Merge mock projects with DB projects, mapping DB fields to UI fields
+  const allProjects = [
+    ...dbProjects.map(p => ({
+      id: p._id,
+      name: p.name,
+      status: p.status || 'Planning',
+      progress: p.progress || 0,
+      team: p.teamMembers?.length || 1,
+      deadline: p.endDate || '2025-12-31',
+      priority: p.priority || 'Medium',
+      tasksSummary: { total: 10, completed: 0 },
+      description: p.description || 'No description provided',
+      startDate: p.startDate || new Date().toISOString(),
+      manager: p.manager?.name || 'Unassigned',
+      department: p.department || 'General',
+      budget: `₹${p.budget || 0}`,
+      spent: '₹0',
+      myRole: 'Team Member',
+      teamMembers: p.teamMembers || [],
+      milestones: [],
+      assets: [],
+      recentUpdates: [],
+      tasks: []
+    })),
+    ...projects
+  ];
+
   const filteredProjects = filterStatus === 'all'
-    ? projects
-    : projects.filter(p => p.status.toLowerCase() === filterStatus);
+    ? allProjects
+    : allProjects.filter(p => p.status.toLowerCase() === filterStatus);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -222,18 +278,62 @@ export const ProjectsPage = () => {
             <h1 className="text-white mb-2">Projects & Work</h1>
             <p className="text-[#87CEEB] opacity-90">Manage and track your project assignments</p>
           </div>
-          <button className="bg-white text-[#0B4DA2] px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-white text-[#0B4DA2] px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center gap-2">
             <Plus size={20} /> New Project
           </button>
         </div>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in slide-in-from-bottom-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-[#1B254B]">New Project</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Project Name *</label>
+                <input type="text" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none text-sm" placeholder="e.g., Q3 Expansion" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Department</label>
+                <input type="text" value={newProject.department} onChange={e => setNewProject({...newProject, department: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none text-sm" placeholder="e.g., Engineering" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Status</label>
+                  <select value={newProject.status} onChange={e => setNewProject({...newProject, status: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none text-sm">
+                    <option>Planning</option><option>In Progress</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Priority</label>
+                  <select value={newProject.priority} onChange={e => setNewProject({...newProject, priority: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none text-sm">
+                    <option>Low</option><option>Medium</option><option>High</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Budget (₹)</label>
+                <input type="number" value={newProject.budget} onChange={e => setNewProject({...newProject, budget: e.target.value})} className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none text-sm" placeholder="e.g., 500000" />
+              </div>
+              <button onClick={handleAddProject} disabled={isSubmitting || !newProject.name} className="w-full bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors mt-4 disabled:opacity-50">
+                {isSubmitting ? 'Adding...' : 'Create Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <Briefcase className="text-[#0B4DA2]" size={24} />
-            <span className="text-2xl font-bold text-[#1B254B]">{projects.length}</span>
+            <span className="text-2xl font-bold text-[#1B254B]">{allProjects.length}</span>
           </div>
           <p className="text-sm text-[#A3AED0]">Total Projects</p>
         </div>
@@ -241,7 +341,7 @@ export const ProjectsPage = () => {
           <div className="flex items-center justify-between mb-2">
             <Clock className="text-[#FFB547]" size={24} />
             <span className="text-2xl font-bold text-[#1B254B]">
-              {projects.filter(p => p.status === 'In Progress').length}
+              {allProjects.filter(p => p.status === 'In Progress').length}
             </span>
           </div>
           <p className="text-sm text-[#A3AED0]">In Progress</p>
@@ -250,7 +350,7 @@ export const ProjectsPage = () => {
           <div className="flex items-center justify-between mb-2">
             <CheckCircle className="text-[#05CD99]" size={24} />
             <span className="text-2xl font-bold text-[#1B254B]">
-              {projects.filter(p => p.status === 'Completed').length}
+              {allProjects.filter(p => p.status === 'Completed').length}
             </span>
           </div>
           <p className="text-sm text-[#A3AED0]">Completed</p>
@@ -259,7 +359,7 @@ export const ProjectsPage = () => {
           <div className="flex items-center justify-between mb-2">
             <AlertCircle className="text-[#EE5D50]" size={24} />
             <span className="text-2xl font-bold text-[#1B254B]">
-              {projects.filter(p => p.priority === 'High').length}
+              {allProjects.filter(p => p.priority === 'High').length}
             </span>
           </div>
           <p className="text-sm text-[#A3AED0]">High Priority</p>
@@ -606,11 +706,11 @@ export const ProjectsPage = () => {
 
             {/* Footer Actions */}
             <div className="sticky bottom-0 bg-gray-50 p-6 border-t border-gray-200 rounded-b-[24px] flex gap-3">
-              <button className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => window.location.hash = '#/employee/documents'} className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2">
                 <FileText size={18} />
                 View Documents
               </button>
-              <button className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => window.open(`http://localhost:5000/api/pdf/project/${selectedProject.id || selectedProject._id}`, '_blank')} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                 <Download size={18} />
                 Download Report
               </button>

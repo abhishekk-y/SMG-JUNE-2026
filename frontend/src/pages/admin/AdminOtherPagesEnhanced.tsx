@@ -68,7 +68,7 @@ export const AdminUsersPage = () => {
         { degree: 'Higher Secondary', institution: 'St. Xavier School', year: '2003' }
       ],
       experience: [
-        { company: 'SMG Scooters', position: 'Senior Operator', from: '2018', to: 'Present' },
+        { company: 'SMG Electric', position: 'Senior Operator', from: '2018', to: 'Present' },
         { company: 'Hero MotoCorp', position: 'Junior Operator', from: '2015', to: '2018' },
         { company: 'Bajaj Auto', position: 'Trainee', from: '2013', to: '2015' }
       ],
@@ -109,7 +109,7 @@ export const AdminUsersPage = () => {
         { degree: 'B.Tech in Quality Engineering', institution: 'Delhi Technical University', year: '2008-2012' }
       ],
       experience: [
-        { company: 'SMG Scooters', position: 'QC Inspector', from: '2019', to: 'Present' },
+        { company: 'SMG Electric', position: 'QC Inspector', from: '2019', to: 'Present' },
         { company: 'Maruti Suzuki', position: 'Quality Analyst', from: '2016', to: '2019' }
       ],
       salary: { basic: '₹55,000', hra: '₹22,000', allowances: '₹15,000', total: '₹92,000' },
@@ -149,7 +149,7 @@ export const AdminUsersPage = () => {
         { degree: 'B.Tech in Mechanical Engineering', institution: 'NIT Surat', year: '2010-2014' }
       ],
       experience: [
-        { company: 'SMG Scooters', position: 'Design Engineer', from: '2020', to: 'Present' },
+        { company: 'SMG Electric', position: 'Design Engineer', from: '2020', to: 'Present' },
         { company: 'Mahindra & Mahindra', position: 'Junior Engineer', from: '2018', to: '2020' }
       ],
       salary: { basic: '₹75,000', hra: '₹30,000', allowances: '₹20,000', total: '₹1,25,000' },

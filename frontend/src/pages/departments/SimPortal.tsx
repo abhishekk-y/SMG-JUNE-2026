@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Smartphone,
@@ -39,6 +39,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner@2.0.3';
 
 import { generateGenericListPDF } from '../../utils/pdfExport';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
 import logo from 'figma:asset/7ef5cbbf7f7fd6bbcf30128158bd641f40437597.png';
 
@@ -81,6 +82,66 @@ interface Notification {
   priority: 'high' | 'medium' | 'low';
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
 // Get dynamic greeting based on time
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -109,7 +170,7 @@ export function SimPortal() {
     return () => clearInterval(interval);
   }, []);
 
-  const [simRequests, setSimRequests] = useState<SimRequest[]>([
+  const defaultSimRequests: SimRequest[] = [
     {
       id: 'SR001',
       employeeId: 'SMG-2024-042',
@@ -150,9 +211,9 @@ export function SimPortal() {
       approvalDate: '2024-12-14',
       justification: 'Marketing campaigns and client outreach'
     }
-  ]);
+  ];
 
-  const [simRecords, setSimRecords] = useState<SimIssueRecord[]>([
+  const defaultSimRecords: SimIssueRecord[] = [
     {
       id: 'SIM001',
       simNumber: '8991101234567890',
@@ -195,7 +256,10 @@ export function SimPortal() {
       expiryDate: '2025-10-10',
       status: 'active'
     }
-  ]);
+  ];
+
+  const { data: simRequests, api: simRequestsApi } = useDataStore('sim:requests', defaultSimRequests);
+  const { data: simRecords, api: simRecordsApi } = useDataStore('sim:records', defaultSimRecords);
 
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -230,13 +294,13 @@ export function SimPortal() {
     phone: '+91 120 1234567',
     extension: 'Ext: 300',
     department: 'Personnel & Administration',
-    totalSimsIssued: 156,
-    activeConnections: 142,
+    totalSimsIssued: simRecords.length,
+    activeConnections: simRecords.filter(r => r.status === 'active').length,
     pendingRequests: simRequests.filter(r => r.status === 'pending').length,
-    monthlyExpense: 67458
+    monthlyExpense: simRecords.filter(r => r.status === 'active').reduce((sum, r) => sum + r.monthlyRental, 0)
   };
 
-  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }) => (
+  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }: any) => (
     <motion.button
       onClick={onClick}
       whileHover={{ y: -4 }}
@@ -260,25 +324,21 @@ export function SimPortal() {
     </motion.button>
   );
 
-  const handleApproveRequest = (requestId: string) => {
-    setSimRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'approved' as const, approvedBy: 'System Admin', approvalDate: new Date().toISOString().split('T')[0] } : req
-      )
-    );
+  const handleApproveRequest = async (requestId: string) => {
+    await simRequestsApi.update((req: SimRequest) => req.id === requestId, () => ({
+      status: 'approved',
+      approvedBy: 'System Admin',
+      approvalDate: new Date().toISOString().split('T')[0]
+    }));
     toast.success('SIM request approved successfully');
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setSimRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'rejected' as const } : req
-      )
-    );
+  const handleRejectRequest = async (requestId: string) => {
+    await simRequestsApi.update((req: SimRequest) => req.id === requestId, () => ({ status: 'rejected' }));
     toast.error('SIM request rejected');
   };
 
-  const handleIssueSim = (formData: any) => {
+  const handleIssueSim = async (formData: any) => {
     const newRecord: SimIssueRecord = {
       id: `SIM${String(simRecords.length + 1).padStart(3, '0')}`,
       simNumber: formData.simNumber,
@@ -293,15 +353,12 @@ export function SimPortal() {
       expiryDate: formData.expiryDate,
       status: 'active'
     };
-    setSimRecords(prev => [newRecord, ...prev]);
+    await simRecordsApi.add(newRecord);
 
     // Update the request status
-    setSimRequests(prev =>
-      prev.map(req =>
-        req.employeeId === formData.employeeId && req.status === 'approved'
-          ? { ...req, status: 'issued' as const }
-          : req
-      )
+    await simRequestsApi.update(
+      (req: SimRequest) => req.employeeId === formData.employeeId && req.status === 'approved',
+      () => ({ status: 'issued' })
     );
 
     toast.success(`SIM card ${formData.simNumber} issued to ${formData.employeeName} successfully`);

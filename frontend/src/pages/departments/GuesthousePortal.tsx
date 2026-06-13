@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Home,
@@ -42,6 +42,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner@2.0.3';
 
 import { generateGenericListPDF } from '../../utils/pdfExport';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
 import logo from 'figma:asset/7ef5cbbf7f7fd6bbcf30128158bd641f40437597.png';
 
@@ -85,6 +86,66 @@ interface Room {
   currentGuest?: string;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
 export function GuesthousePortal() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewBookingDialog, setShowNewBookingDialog] = useState(false);
@@ -105,7 +166,7 @@ export function GuesthousePortal() {
     return () => clearInterval(interval);
   }, []);
 
-  const [bookings, setBookings] = useState<GuesthouseBooking[]>([
+  const defaultBookings: GuesthouseBooking[] = [
     {
       id: 'GH001',
       guestName: 'Mr. Anil Kapoor',
@@ -162,9 +223,9 @@ export function GuesthousePortal() {
       roomNumber: '205',
       totalAmount: 12000
     }
-  ]);
+  ];
 
-  const [rooms, setRooms] = useState<Room[]>([
+  const defaultRooms: Room[] = [
     {
       id: 'R001',
       roomNumber: '101',
@@ -220,7 +281,10 @@ export function GuesthousePortal() {
       amenities: ['AC', 'TV', 'WiFi', 'Attached Bathroom'],
       status: 'available'
     }
-  ]);
+  ];
+
+  const { data: bookings, api: bookingsApi } = useDataStore('guesthouse:bookings', defaultBookings);
+  const { data: rooms, api: roomsApi } = useDataStore('guesthouse:rooms', defaultRooms);
 
   const notifications = [
     {
@@ -262,7 +326,7 @@ export function GuesthousePortal() {
     monthlyRevenue: 145000
   };
 
-  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }) => (
+  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }: any) => (
     <motion.button
       onClick={onClick}
       whileHover={{ y: -4 }}
@@ -286,58 +350,33 @@ export function GuesthousePortal() {
     </motion.button>
   );
 
-  const handleApproveBooking = (bookingId: string) => {
-    setBookings(prev =>
-      prev.map(b =>
-        b.id === bookingId ? {
-          ...b,
-          status: 'approved' as const,
-          approvedBy: 'Admin Manager',
-          approvalDate: new Date().toISOString().split('T')[0],
-          totalAmount: 5000 // Calculated amount
-        } : b
-      )
-    );
+  const handleApproveBooking = async (bookingId: string) => {
+    await bookingsApi.update((b: GuesthouseBooking) => b.id === bookingId, () => ({
+      status: 'approved',
+      approvedBy: 'Admin Manager',
+      approvalDate: new Date().toISOString().split('T')[0],
+      totalAmount: 5000 // Calculated amount
+    }));
     toast.success('Guest house booking approved successfully');
   };
 
-  const handleRejectBooking = (bookingId: string) => {
-    setBookings(prev =>
-      prev.map(b =>
-        b.id === bookingId ? { ...b, status: 'rejected' as const } : b
-      )
-    );
+  const handleRejectBooking = async (bookingId: string) => {
+    await bookingsApi.update((b: GuesthouseBooking) => b.id === bookingId, () => ({ status: 'rejected' }));
     toast.error('Guest house booking rejected');
   };
 
-  const handleCheckIn = (bookingId: string, roomNumber: string) => {
-    setBookings(prev =>
-      prev.map(b =>
-        b.id === bookingId ? { ...b, status: 'checked-in' as const, roomNumber } : b
-      )
-    );
-    setRooms(prev =>
-      prev.map(r =>
-        r.roomNumber === roomNumber ? { ...r, status: 'occupied' as const } : r
-      )
-    );
+  const handleCheckIn = async (bookingId: string, roomNumber: string) => {
+    await bookingsApi.update((b: GuesthouseBooking) => b.id === bookingId, () => ({ status: 'checked-in', roomNumber }));
+    await roomsApi.update((r: Room) => r.roomNumber === roomNumber, () => ({ status: 'occupied' }));
     toast.success(`Guest checked in to Room ${roomNumber}`);
   };
 
-  const handleCheckOut = (bookingId: string) => {
+  const handleCheckOut = async (bookingId: string) => {
     const booking = bookings.find(b => b.id === bookingId);
     if (booking?.roomNumber) {
-      setRooms(prev =>
-        prev.map(r =>
-          r.roomNumber === booking.roomNumber ? { ...r, status: 'available' as const, currentGuest: undefined } : r
-        )
-      );
+      await roomsApi.update((r: Room) => r.roomNumber === booking.roomNumber, () => ({ status: 'available', currentGuest: undefined }));
     }
-    setBookings(prev =>
-      prev.map(b =>
-        b.id === bookingId ? { ...b, status: 'checked-out' as const } : b
-      )
-    );
+    await bookingsApi.update((b: GuesthouseBooking) => b.id === bookingId, () => ({ status: 'checked-out' }));
     toast.success('Guest checked out successfully');
   };
 

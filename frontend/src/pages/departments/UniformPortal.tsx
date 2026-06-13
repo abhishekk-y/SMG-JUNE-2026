@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { 
   Shirt, 
@@ -40,6 +40,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner@2.0.3';
 
 import { generateGenericListPDF } from '../../utils/pdfExport';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
 import logo from 'figma:asset/7ef5cbbf7f7fd6bbcf30128158bd641f40437597.png';
 
@@ -85,6 +86,66 @@ interface UniformStock {
   supplier: string;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
 export function UniformPortal() {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -101,7 +162,7 @@ export function UniformPortal() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const [uniformRequests, setUniformRequests] = useState<UniformRequest[]>([
+  const defaultUniformRequests: UniformRequest[] = [
     {
       id: 'UR001',
       employeeId: 'SMG-2024-042',
@@ -135,9 +196,9 @@ export function UniformPortal() {
       approvalDate: '2024-12-15',
       reason: 'Current uniform damaged beyond repair'
     }
-  ]);
+  ];
 
-  const [uniformRecords, setUniformRecords] = useState<UniformIssueRecord[]>([
+  const defaultUniformRecords: UniformIssueRecord[] = [
     {
       id: 'UI001',
       employeeId: 'SMG-2024-089',
@@ -165,9 +226,9 @@ export function UniformPortal() {
       nextIssueDate: '2025-06-10',
       status: 'active'
     }
-  ]);
+  ];
 
-  const [uniformStock, setUniformStock] = useState<UniformStock[]>([
+  const defaultUniformStock: UniformStock[] = [
     { id: 'US001', itemType: 'Shirt', size: 'S', quantity: 45, reorderLevel: 20, unitPrice: 450, supplier: 'ABC Textiles' },
     { id: 'US002', itemType: 'Shirt', size: 'M', quantity: 62, reorderLevel: 20, unitPrice: 450, supplier: 'ABC Textiles' },
     { id: 'US003', itemType: 'Shirt', size: 'L', quantity: 18, reorderLevel: 20, unitPrice: 450, supplier: 'ABC Textiles' },
@@ -182,7 +243,11 @@ export function UniformPortal() {
     { id: 'US012', itemType: 'Lab Coat', size: 'L', quantity: 14, reorderLevel: 10, unitPrice: 850, supplier: 'Professional Uniforms' },
     { id: 'US013', itemType: 'Safety Gloves', size: 'M', quantity: 150, reorderLevel: 50, unitPrice: 120, supplier: 'Safety Equipment Co' },
     { id: 'US014', itemType: 'Safety Gloves', size: 'L', quantity: 180, reorderLevel: 50, unitPrice: 120, supplier: 'Safety Equipment Co' }
-  ]);
+  ];
+
+  const { data: uniformRequests, api: requestsApi } = useDataStore('uniform:requests', defaultUniformRequests);
+  const { data: uniformRecords, api: recordsApi } = useDataStore('uniform:records', defaultUniformRecords);
+  const { data: uniformStock, api: stockApi } = useDataStore('uniform:stock', defaultUniformStock);
 
   const notifications = [
     {
@@ -217,13 +282,13 @@ export function UniformPortal() {
     phone: '+91 120 1234567',
     extension: 'Ext: 400',
     department: 'Personnel & Administration',
-    totalUniformsIssued: 487,
-    activeEmployees: 325,
+    totalUniformsIssued: uniformRecords.length,
+    activeEmployees: new Set(uniformRecords.map(r => r.employeeId)).size,
     pendingRequests: uniformRequests.filter(r => r.status === 'pending').length,
     lowStockItems: uniformStock.filter(s => s.quantity <= s.reorderLevel).length
   };
 
-  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }) => (
+  const StatCard = ({ icon: Icon, label, value, subtext, change, colorClass, onClick }: any) => (
     <motion.button
       onClick={onClick}
       whileHover={{ y: -4 }}
@@ -248,25 +313,21 @@ export function UniformPortal() {
     </motion.button>
   );
 
-  const handleApproveRequest = (requestId: string) => {
-    setUniformRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'approved' as const, approvedBy: 'System Admin', approvalDate: new Date().toISOString().split('T')[0] } : req
-      )
-    );
+  const handleApproveRequest = async (requestId: string) => {
+    await requestsApi.update((req: UniformRequest) => req.id === requestId, () => ({
+      status: 'approved',
+      approvedBy: 'System Admin',
+      approvalDate: new Date().toISOString().split('T')[0]
+    }));
     toast.success('Uniform request approved successfully');
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setUniformRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'rejected' as const } : req
-      )
-    );
+  const handleRejectRequest = async (requestId: string) => {
+    await requestsApi.update((req: UniformRequest) => req.id === requestId, () => ({ status: 'rejected' }));
     toast.error('Uniform request rejected');
   };
 
-  const handleIssueUniform = (formData: any) => {
+  const handleIssueUniform = async (formData: any) => {
     const newRecord: UniformIssueRecord = {
       id: `UI${String(uniformRecords.length + 1).padStart(3, '0')}`,
       employeeId: formData.employeeId,
@@ -277,15 +338,12 @@ export function UniformPortal() {
       nextIssueDate: formData.nextIssueDate,
       status: 'active'
     };
-    setUniformRecords(prev => [newRecord, ...prev]);
+    await recordsApi.add(newRecord);
     
     // Update the request status
-    setUniformRequests(prev =>
-      prev.map(req =>
-        req.employeeId === formData.employeeId && req.status === 'approved' 
-          ? { ...req, status: 'issued' as const } 
-          : req
-      )
+    await requestsApi.update(
+      (req: UniformRequest) => req.employeeId === formData.employeeId && req.status === 'approved',
+      () => ({ status: 'issued' })
     );
     
     toast.success(`Uniform issued to ${formData.employeeName} successfully`);

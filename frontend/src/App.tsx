@@ -90,121 +90,9 @@ import {
   Shield
 } from 'lucide-react';
 
-const INITIAL_DATA = {
-  user: {
-    name: "Rohit Sharma",
-    role: "Senior Technician",
-    empId: "SMG-2024-042",
-    dept: "Assembly",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit&backgroundColor=b6e3f4",
-    email: "employee@smg.com",
-    shift: "General (9:00 - 18:00)",
-    reportingTo: "Priya Sharma",
-    phone: "+91 98765 43210",
-    emergencyContact: "+91 98765 43211",
-    dateOfBirth: "15-Aug-1992",
-    dateOfJoining: "10-Jan-2020",
-    bloodGroup: "O+",
-    address: "Flat 402, Green Valley Apartments, Sector 12, Noida, UP - 201301",
-    education: [
-      { degree: "B.Tech in Mechanical Engineering", institution: "Delhi Technical University", year: "2010-2014", grade: "8.2 CGPA" },
-      { degree: "Senior Secondary (XII)", institution: "DAV Public School", year: "2010", grade: "88%" }
-    ],
-    certifications: [
-      { name: "Six Sigma Green Belt", issuer: "ASQ", year: "2021" },
-      { name: "Industrial Safety", issuer: "NSCI", year: "2020" },
-      { name: "Quality Management", issuer: "ISO", year: "2019" }
-    ],
-    skills: ["Assembly Line Operations", "Quality Control", "Safety Compliance", "Technical Documentation", "Team Leadership"],
-    languages: ["Hindi (Native)", "English (Fluent)", "Punjabi (Conversational)"]
-  },
-  stats: {
-    leaveBalance: 12,
-    pendingRequests: 5,
-    trainingHours: 24,
-    canteenBalance: "₹450"
-  },
-  recentRequests: [
-    { id: "REQ001", type: "Leave Application", desc: "Annual Leave - Diwali Vacation", date: "2024-12-01", status: "Approved", approver: "Priya Sharma" },
-    { id: "REQ002", type: "Reimbursement", desc: "Travel Expense - Client Visit Mumbai", date: "2024-11-28", status: "Pending", approver: "Amit Patel" },
-    { id: "REQ003", type: "Asset Request", desc: "New Laptop - MacBook Pro", date: "2024-11-25", status: "In Progress", approver: "IT Admin" },
-    { id: "REQ004", type: "Certificate Request", desc: "Experience Certificate", date: "2024-11-20", status: "Approved", approver: "HR Team" }
-  ],
-  upcomingTraining: [
-    { id: 1, title: "React Advanced Patterns", type: "Required", date: "2024-12-18", duration: "4 hours", instructor: "Vikram Singh" },
-    { id: 2, title: "AWS Cloud Fundamentals", type: "Optional", date: "2024-12-25", duration: "8 hours", instructor: "Sneha Reddy" },
-    { id: 3, title: "Agile & Scrum Workshop", type: "Required", date: "2024-12-30", duration: "6 hours", instructor: "Arjun Mehta" }
-  ],
-  myAssets: [
-    { name: "Dell Latitude 5520", type: "Laptop", status: "Good", icon: Briefcase },
-    { name: "iPhone 13 Pro", type: "Mobile", status: "Excellent", icon: Smartphone },
-    { name: "Dell Monitor 24\"", type: "Monitor", status: "Good", icon: Briefcase },
-    { name: "Logitech MX Keys", type: "Keyboard", status: "Fair", icon: Briefcase }
-  ],
-  keyContacts: [
-    { name: "Amit Kumar", role: "HR Manager" },
-    { name: "Sneha Patel", role: "IT Support" },
-    { name: "Vikram Singh", role: "Safety Officer" }
-  ],
-  meetings: [
-    { title: "Team Standup", time: "10:00 AM", duration: "30 min", type: "Conference Room A", link: "" },
-    { title: "Project Review", time: "02:00 PM", duration: "1 hour", type: "Online", link: "meet.google.com/abc-defg-hij" },
-    { title: "Safety Training", time: "04:00 PM", duration: "45 min", type: "Training Hall", link: "" }
-  ],
-  notifications: [
-    { text: "Your leave request has been approved", time: "2 hours ago" },
-    { text: "New training assigned: React Advanced Patterns", time: "5 hours ago" },
-    { text: "Payslip for October 2024 is available", time: "1 day ago" }
-  ],
-  attendanceLogs: [
-    {
-      id: 1, day: "Today", date: "Dec 12, 2024", checkIn: "08:55 AM", checkOut: "06:12 PM", duration: "9h 17m", status: "Present", isLeave: false, segments: [
-        { type: 'work', width: '40%', color: 'bg-[#0B4DA2]' },
-        { type: 'break', width: '10%', color: 'bg-[#05CD99]' },
-        { type: 'work', width: '30%', color: 'bg-[#0B4DA2]' },
-        { type: 'overtime', width: '20%', color: 'bg-[#FFB547]' }
-      ]
-    },
-    { id: 2, day: "Thursday", date: "Dec 11, 2024", checkIn: "-", checkOut: "-", duration: "-", status: "Leave", isLeave: true, segments: [] },
-    {
-      id: 3, day: "Wednesday", date: "Dec 10, 2024", checkIn: "09:00 AM", checkOut: "05:00 PM", duration: "8h 00m", status: "Present", isLeave: false, segments: [
-        { type: 'work', width: '45%', color: 'bg-[#0B4DA2]' },
-        { type: 'break', width: '10%', color: 'bg-[#05CD99]' },
-        { type: 'work', width: '45%', color: 'bg-[#0B4DA2]' }
-      ]
-    },
-    {
-      id: 4, day: "Tuesday", date: "Dec 9, 2024", checkIn: "09:15 AM", checkOut: "07:12 PM", duration: "9h 57m", status: "Present", isLeave: false, segments: [
-        { type: 'late', width: '5%', color: 'bg-[#EE5D50]' },
-        { type: 'work', width: '40%', color: 'bg-[#0B4DA2]' },
-        { type: 'break', width: '10%', color: 'bg-[#05CD99]' },
-        { type: 'work', width: '45%', color: 'bg-[#0B4DA2]' }
-      ]
-    }
-  ],
-  documents: [
-    { id: 1, title: "Offer Letter", category: "Onboarding", type: "PDF", size: "245 KB", date: "Jan 10, 2020" },
-    { id: 2, title: "ID Proof - Aadhaar", category: "Identity", type: "PDF", size: "180 KB", date: "Jan 12, 2020" },
-    { id: 3, title: "PAN Card", category: "Tax Documents", type: "PDF", size: "120 KB", date: "Jan 12, 2020" },
-    { id: 4, title: "Experience Certificate", category: "Certificates", type: "PDF", size: "156 KB", date: "Feb 20, 2021" },
-    { id: 5, title: "Payslip - October 2024", category: "Payroll", type: "PDF", size: "98 KB", date: "Nov 1, 2024" },
-    { id: 6, title: "Tax Declaration Form", category: "Tax Documents", type: "PDF", size: "210 KB", date: "Apr 5, 2024" }
-  ],
-  trainingData: {
-    upcoming: [
-      { id: 1, title: "React Advanced Patterns", date: "Dec 18, 2024", duration: "4 hours", instructor: "Vikram Singh", mandatory: true },
-      { id: 2, title: "AWS Cloud Fundamentals", date: "Dec 25, 2024", duration: "8 hours", instructor: "Sneha Reddy", mandatory: false },
-      { id: 3, title: "Agile & Scrum Workshop", date: "Jan 5, 2025", duration: "6 hours", instructor: "Arjun Mehta", mandatory: true }
-    ],
-    completed: [
-      { id: 4, title: "Six Sigma Green Belt Training", date: "Aug 15, 2021", duration: "40 hours" },
-      { id: 5, title: "Industrial Safety Certification", date: "Jun 20, 2020", duration: "16 hours" },
-      { id: 6, title: "Quality Management System", date: "Mar 10, 2019", duration: "24 hours" }
-    ]
-  }
-};
-
-const Topbar = ({ user, onMobileMenu, onNavigate }) => {
+// Removed legacy INITIAL_DATA block
+const Topbar = ({ onMobileMenu, onNavigate }) => {
+  const { currentUser, notifications } = useApp();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
 
@@ -216,12 +104,8 @@ const Topbar = ({ user, onMobileMenu, onNavigate }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const recentNotifications = [
-    { id: 1, text: 'Your leave request has been approved', time: '2 hours ago', type: 'success' },
-    { id: 2, text: 'New training assigned: React Advanced Patterns', time: '5 hours ago', type: 'info' },
-    { id: 3, text: 'Payslip for October 2024 is available', time: '1 day ago', type: 'info' },
-    { id: 4, text: 'Document expiring soon - Please update', time: '2 days ago', type: 'warning' }
-  ];
+  const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
+  const recentNotifications = notifications?.slice(0, 4) || [];
 
   return (
     <header className="sticky top-0 z-30 bg-[#F4F7FE]/90 backdrop-blur-xl px-4 py-4 lg:px-8 flex justify-between items-center transition-all border-b border-white/50">
@@ -248,56 +132,47 @@ const Topbar = ({ user, onMobileMenu, onNavigate }) => {
       <div className="flex items-center gap-4">
         <div className="hidden sm:flex items-center bg-white rounded-full px-4 py-2 shadow-sm w-64 border border-transparent hover:border-[#0B4DA2]/30 transition-colors focus-within:border-[#0B4DA2]/50 focus-within:ring-2 focus-within:ring-[#0B4DA2]/10">
           <Search size={16} className="text-gray-400" />
-          <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-sm ml-2 w-full text-[#1B254B] placeholder:text-gray-300" />
+          <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full ml-2 text-sm text-[#1B254B] placeholder-gray-400" />
         </div>
-        <button className="relative p-2.5 bg-white text-gray-400 hover:text-[#0B4DA2] rounded-full shadow-sm transition-colors group hover:shadow-md border border-gray-100" onClick={() => alert("Opening Mail...")} title="Work Mail">
-          <Mail size={20} className="group-hover:rotate-12 transition-transform" />
-        </button>
 
-        {/* Notification Bell with Popup */}
         <div className="relative">
           <button
             onClick={() => setShowNotificationPopup(!showNotificationPopup)}
-            className="relative p-2.5 bg-white text-gray-400 hover:text-[#0B4DA2] rounded-full shadow-sm transition-colors group hover:shadow-md border border-gray-100"
+            className="p-2 text-gray-400 hover:text-[#0B4DA2] bg-white rounded-full shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-[#0B4DA2]/30 active:scale-95 relative"
           >
-            <Bell size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-[#EE5D50] rounded-full border-2 border-white"></span>
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#EE5D50] rounded-full border-2 border-white animate-pulse"></span>
+            )}
           </button>
 
-          {/* Notification Popup */}
+          {/* Notifications Dropdown */}
           {showNotificationPopup && (
             <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowNotificationPopup(false)}
-              ></div>
-              <div className="absolute right-0 top-14 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 animate-in slide-in-from-top-4 duration-300">
-                <div className="p-4 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-[#1B254B] text-lg">Notifications</h3>
-                    <span className="bg-[#EE5D50] text-white text-xs font-bold px-2 py-1 rounded-full">
-                      {recentNotifications.length}
-                    </span>
-                  </div>
+              <div className="fixed inset-0 z-40" onClick={() => setShowNotificationPopup(false)} />
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-in slide-in-from-top-2 duration-200">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                  <h3 className="font-bold text-[#1B254B]">Notifications</h3>
+                  <span className="text-xs font-bold bg-[#0B4DA2] text-white px-2 py-0.5 rounded-full">{unreadCount} New</span>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {recentNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${notification.type === 'success' ? 'bg-green-500' :
-                          notification.type === 'warning' ? 'bg-yellow-500' :
-                            'bg-blue-500'
-                          }`}></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-[#1B254B] leading-tight">{notification.text}</p>
-                          <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {recentNotifications.length > 0 ? recentNotifications.map((notif: any) => (
+                    <div key={notif.id} className="p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors group">
+                      <div className="flex gap-3">
+                        <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${notif.type === 'success' ? 'bg-[#05CD99]' : notif.type === 'warning' ? 'bg-[#FFB547]' : 'bg-[#0B4DA2]'}`} />
+                        <div>
+                          <p className="text-sm font-semibold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors">{notif.title}</p>
+                          <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{notif.time}</p>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="p-6 text-center text-gray-400">
+                      <Bell size={24} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No new notifications</p>
+                    </div>
+                  )}
                 </div>
                 <div className="p-3 border-t border-gray-100">
                   <button
@@ -316,10 +191,10 @@ const Topbar = ({ user, onMobileMenu, onNavigate }) => {
         </div>
 
         <div onClick={() => onNavigate('profile')} className="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full shadow-sm cursor-pointer hover:shadow-md transition-all border border-gray-100 hover:border-[#0B4DA2]/30 active:scale-95">
-          <img src={user.avatar} alt="Profile" className="w-9 h-9 rounded-full border border-gray-200" />
+          <img src={currentUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.name || 'User'}&backgroundColor=b6e3f4`} alt="Profile" className="w-9 h-9 rounded-full border border-gray-200" />
           <div className="hidden lg:block text-left">
-            <p className="text-sm font-bold text-[#1B254B] leading-tight">{user.name}</p>
-            <p className="text-[10px] text-gray-400 font-medium">{user.role}</p>
+            <p className="text-sm font-bold text-[#1B254B] leading-tight">{currentUser?.name || 'Guest'}</p>
+            <p className="text-[10px] text-gray-400 font-medium">{currentUser?.role || 'Employee'}</p>
           </div>
           <ChevronRight size={16} className="text-gray-300" />
         </div>
@@ -365,7 +240,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout }) => {
       <div className="p-6 border-b border-[#0B4DA2]/30 flex items-center gap-3 overflow-hidden whitespace-nowrap shrink-0">
         <div className="w-8 h-8 bg-[#0B4DA2] rounded-xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 text-sm">SMG</div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <h2 className="text-white font-bold tracking-wide text-sm">SMG Scooters</h2>
+          <h2 className="text-white font-bold tracking-wide text-sm">SMG Electric</h2>
           <p className="text-[10px] text-[#87CEEB] tracking-widest font-bold opacity-80">ADMIN PORTAL</p>
         </div>
       </div>
@@ -464,9 +339,9 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
   const renderContent = () => {
     switch (activePage) {
       // Main Pages
-      case 'dashboard': return <DashboardPageOld data={INITIAL_DATA} onNavigate={setActivePage} />;
+      case 'dashboard': return <DashboardPage userData={INITIAL_DATA.user} onNavigate={setActivePage} />;
       case 'projects': return <ProjectsPage />;
-      case 'profile': return <MyProfilePageOld user={INITIAL_DATA.user} />;
+      case 'profile': return <ProfilePage userData={INITIAL_DATA.user} />;
 
       // Service Catalog Sub-items
       case 'canteen': return <CanteenPage />;
@@ -483,9 +358,9 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       case 'gate-pass': return <GatePassPage />;
 
       // Work & Pay Pages
-      case 'payroll': return <PayrollPageOld user={INITIAL_DATA.user} />;
-      case 'training': return <TrainingPage trainingData={INITIAL_DATA.trainingData} user={INITIAL_DATA.user} />;
-      case 'documents': return <MyDocumentsPageOld documents={INITIAL_DATA.documents} user={INITIAL_DATA.user} />;
+      case 'payroll': return <PayrollPage />;
+      case 'training': return <TrainingPage />;
+      case 'documents': return <DocumentsPage />;
 
       // Personal & Info Pages
       case 'welfare': return <WelfarePage />;
@@ -532,7 +407,7 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
         <Sidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
       )}
       <div className="lg:ml-[80px] min-h-screen flex flex-col transition-all duration-300">
-        <Topbar user={INITIAL_DATA.user} onMobileMenu={() => setMobileMenuOpen(true)} onNavigate={setActivePage} />
+        <Topbar onMobileMenu={() => setMobileMenuOpen(true)} onNavigate={setActivePage} />
         <main className="p-4 lg:p-6 w-full max-w-[1600px] mx-auto pb-24 lg:pb-8">{renderContent()}</main>
       </div>
       {mobileMenuOpen && (
@@ -639,7 +514,7 @@ const Sidebar = ({ activePage, onNavigate, onLogout }) => {
       <div className="p-6 border-b border-[#0B4DA2]/30 flex items-center gap-3 overflow-hidden whitespace-nowrap shrink-0">
         <div className="w-8 h-8 bg-[#0B4DA2] rounded-xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 text-sm">SMG</div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <h2 className="text-white font-bold tracking-wide text-sm">SMG Scooters</h2>
+          <h2 className="text-white font-bold tracking-wide text-sm">SMG Electric</h2>
           <p className="text-[10px] text-[#87CEEB] tracking-widest font-bold opacity-80">EMPLOYEE PORTAL</p>
         </div>
       </div>

@@ -428,8 +428,8 @@ export function DepartmentPortalHub() {
               className="h-16 w-auto object-contain"
             />
             <div className="border-l-2 border-gray-200 pl-4">
-              <span className="text-3xl font-extrabold text-[#0B4DA2] block">SMG Scooters</span>
-              <span className="text-sm font-medium text-gray-500">Pvt. Ltd.</span>
+              <span className="text-3xl font-extrabold text-[#0B4DA2] block">SMG Electric</span>
+              <span className="text-sm font-medium text-gray-500">Scooter Ltd.</span>
             </div>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white text-center mb-2">
@@ -497,7 +497,7 @@ export function DepartmentPortalHub() {
           transition={{ delay: 0.8 }}
         >
           <p className="text-white/60 text-sm">
-            © 2025 SMG Scooters Pvt Ltd. All rights reserved.
+            © 2025 SMG Electric Scooter Ltd. All rights reserved.
           </p>
           <p className="text-white/40 text-xs mt-2">
             Contact IT Support for access issues

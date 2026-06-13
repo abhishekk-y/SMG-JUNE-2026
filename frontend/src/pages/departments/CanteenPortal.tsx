@@ -110,6 +110,56 @@ interface MenuItem {
   image?: string;
 }
 
+// ============ HOOKS ============
+const API_URL = 'http://localhost:5000/api';
+
+function useDataStore(key: string) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            let endpoint = '';
+            if (key === 'canteen:requests') endpoint = '/canteen/requests';
+            else if (key === 'canteen:issued') endpoint = '/canteen/issued';
+            else if (key === 'canteen:sales') endpoint = '/canteen/sales';
+
+            if (endpoint) {
+                const res = await fetch(`${API_URL}${endpoint}`);
+                if (res.ok) {
+                    setData(await res.json());
+                }
+            }
+        } catch (err) { console.error('Failed to fetch', key, err); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => {
+        let mounted = true;
+        if (mounted) {
+            fetchData();
+        }
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setData((prev: any[]) => [item, ...prev]);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setData((prev: any[]) => prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it)));
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setData((prev: any[]) => prev.filter(it => !matchFn(it)));
+        },
+        refresh: fetchData
+    }), []);
+
+    return { data, setData, api, loading };
+}
+
 export function CanteenPortal() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewSaleDialog, setShowNewSaleDialog] = useState(false);
@@ -131,92 +181,11 @@ export function CanteenPortal() {
     return () => clearInterval(interval);
   }, []);
 
-  // Default data for coupon requests
-  const [couponRequests, setCouponRequests] = useState<CouponRequest[]>([
-    {
-      id: 'CR001',
-      employeeId: 'SMG-2024-001',
-      employeeName: 'Rahul Kumar',
-      department: 'Assembly',
-      type: 'employee',
-      quantity: 20,
-      amount: 1000,
-      requestDate: '2024-01-15',
-      status: 'pending',
-      serveTime: '01:45 PM'
-    },
-    {
-      id: 'CR002',
-      employeeId: 'SMG-2024-025',
-      employeeName: 'Priya Sharma',
-      department: 'HR',
-      type: 'guest',
-      quantity: 5,
-      amount: 250,
-      requestDate: '2024-01-14',
-      status: 'pending',
-      guestName: 'Mr. John Smith',
-      guestPurpose: 'Vendor Meeting',
-      serveTime: '12:45 PM'
-    },
-    {
-      id: 'CR003',
-      employeeId: 'SMG-2024-042',
-      employeeName: 'Amit Singh',
-      department: 'IT',
-      type: 'employee',
-      quantity: 15,
-      amount: 750,
-      requestDate: '2024-01-14',
-      status: 'approved',
-      serveTime: '12:30 PM'
-    }
-  ]);
+  const { data: couponRequests, api: requestsApi } = useDataStore('canteen:requests');
+  const { data: issuedCoupons, api: issuedApi } = useDataStore('canteen:issued');
+  const { data: sales, api: salesApi } = useDataStore('canteen:sales');
 
-  // Default data for issued coupons
-  const [issuedCoupons, setIssuedCoupons] = useState<CouponIssuance[]>([
-    {
-      id: 'CI001',
-      employeeId: 'SMG-2024-042',
-      employeeName: 'Rohit Sharma',
-      department: 'Assembly',
-      couponNumbers: ['C001', 'C002', 'C003', 'C004', 'C005'],
-      quantity: 5,
-      amount: 250,
-      issueDate: '2024-01-10',
-      validTill: '2024-01-31',
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'CI002',
-      employeeId: 'SMG-2024-018',
-      employeeName: 'Neha Patel',
-      department: 'HR',
-      couponNumbers: ['C006', 'C007', 'C008', 'C009', 'C010'],
-      quantity: 5,
-      amount: 250,
-      issueDate: '2024-01-12',
-      validTill: '2024-01-31',
-      paymentStatus: 'pending'
-    }
-  ]);
-
-  // Default data for sales
-  const [sales, setSales] = useState<Sale[]>([
-    {
-      id: 'S001',
-      employeeId: 'SMG-2024-001',
-      employeeName: 'Rahul Kumar',
-      department: 'Assembly',
-      quantity: 10,
-      amount: 500,
-      saleDate: '2024-01-15',
-      paymentMethod: 'salary-deduction',
-      status: 'completed'
-    }
-  ]);
-
-  // Top selling items
+  // Top selling items (Mock for now, can be computed from sales later)
   const topItems: MenuItem[] = [
     { id: 'M001', name: 'Dal Makhani', category: 'Main Course', price: 60, quantity: 165 },
     { id: 'M002', name: 'Paneer Butter Masala', category: 'Main Course', price: 80, quantity: 142 },
@@ -224,62 +193,81 @@ export function CanteenPortal() {
     { id: 'M004', name: 'Masala Dosa', category: 'Breakfast', price: 50, quantity: 89 }
   ];
 
-  const handleApproveRequest = (requestId: string) => {
-    setCouponRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'approved' as const } : req
-      )
-    );
-    const request = couponRequests.find(r => r.id === requestId);
-    if (request?.type === 'guest') {
-      toast.success(`Guest coupon request approved for ${request.guestName}`);
-    } else {
-      toast.success('Coupon request approved');
-    }
+  const handleApproveRequest = async (requestId: string) => {
+    const request = couponRequests.find(r => r.id === requestId || (r as any)._id === requestId);
+    const dbId = (request as any)?._id || requestId;
+    
+    try {
+      const res = await fetch(`${API_URL}/canteen/requests/${dbId}/approve`, { method: 'PUT' });
+      if (res.ok) {
+        toast.success(request?.type === 'guest' ? `Guest coupon request approved for ${request.guestName}` : 'Coupon request approved');
+        requestsApi.refresh();
+      } else toast.error('Failed to approve request');
+    } catch (e) { toast.error('Server error'); }
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setCouponRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'rejected' as const } : req
-      )
-    );
-    toast.error('Coupon request rejected');
+  const handleRejectRequest = async (requestId: string) => {
+    const request = couponRequests.find(r => r.id === requestId || (r as any)._id === requestId);
+    const dbId = (request as any)?._id || requestId;
+    
+    try {
+      const res = await fetch(`${API_URL}/canteen/requests/${dbId}/reject`, { method: 'PUT' });
+      if (res.ok) {
+        toast.error('Coupon request rejected');
+        requestsApi.refresh();
+      } else toast.error('Failed to reject request');
+    } catch (e) { toast.error('Server error'); }
   };
 
-  const handleNewSale = (formData: any) => {
-    const newSale: Sale = {
-      id: `S${String(sales.length + 1).padStart(3, '0')}`,
+  const handleNewSale = async (formData: any) => {
+    const newSale = {
       employeeId: formData.employeeId,
       employeeName: formData.employeeName,
       department: formData.department,
       quantity: parseInt(formData.quantity),
-      amount: parseInt(formData.amount),
-      saleDate: new Date().toISOString().split('T')[0],
+      amount: parseInt(formData.amount) * parseInt(formData.quantity),
       paymentMethod: formData.paymentMethod,
       status: 'completed'
     };
-    setSales(prev => [newSale, ...prev]);
-    toast.success('Coupon sale recorded. Finance department has been notified.');
-    setShowNewSaleDialog(false);
+    
+    try {
+      const res = await fetch(`${API_URL}/canteen/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSale)
+      });
+      if (res.ok) {
+        toast.success('Coupon sale recorded. Finance department has been notified.');
+        salesApi.refresh();
+        setShowNewSaleDialog(false);
+      } else toast.error('Failed to record sale');
+    } catch (e) { toast.error('Server error'); }
   };
 
-  const handleIssueCoupon = (formData: any) => {
-    const newIssuance: CouponIssuance = {
-      id: `CI${String(issuedCoupons.length + 1).padStart(3, '0')}`,
+  const handleIssueCoupon = async (formData: any) => {
+    const newIssuance = {
       employeeId: formData.employeeId,
       employeeName: formData.employeeName,
       department: formData.department,
       couponNumbers: formData.couponNumbers.split(',').map((n: string) => n.trim()),
       quantity: parseInt(formData.quantity),
-      amount: parseInt(formData.quantity) * 50,
-      issueDate: new Date().toISOString().split('T')[0],
+      amount: parseInt(formData.couponValue) * parseInt(formData.quantity),
       validTill: formData.validTill,
       paymentStatus: 'pending'
     };
-    setIssuedCoupons(prev => [newIssuance, ...prev]);
-    toast.success(`Coupons issued to ${formData.employeeName}`);
-    setShowIssueDialog(false);
+    
+    try {
+      const res = await fetch(`${API_URL}/canteen/issued`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newIssuance)
+      });
+      if (res.ok) {
+        toast.success(`Coupons issued to ${formData.employeeName}`);
+        issuedApi.refresh();
+        setShowIssueDialog(false);
+      } else toast.error('Failed to issue coupons');
+    } catch (e) { toast.error('Server error'); }
   };
 
   const handleViewDetails = (request: CouponRequest) => {
@@ -1101,8 +1089,8 @@ export function CanteenPortal() {
                 <h3 className="text-white font-bold mb-4">Canteen Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-[#0F172A] rounded-xl">
-                    <p className="text-sm text-slate-400 mb-2">Coupon Price</p>
-                    <p className="text-2xl font-bold text-white">₹50</p>
+                    <p className="text-sm text-slate-400 mb-2">Coupon Values</p>
+                    <p className="text-2xl font-bold text-white">₹10, ₹20, ₹50, ₹100</p>
                   </div>
                   <div className="p-4 bg-[#0F172A] rounded-xl">
                     <p className="text-sm text-slate-400 mb-2">Operating Hours</p>
@@ -1194,8 +1182,18 @@ export function CanteenPortal() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white font-bold">Amount (₹) *</Label>
-                  <Input name="amount" type="number" placeholder="Total amount" required className="bg-[#0F172A] border-slate-700 text-white placeholder:text-slate-500" />
+                  <Label className="text-white font-bold">Coupon Value (₹) *</Label>
+                  <Select name="amount" required>
+                    <SelectTrigger className="bg-[#0F172A] border-slate-700 text-white">
+                      <SelectValue placeholder="Select coupon value" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">₹10</SelectItem>
+                      <SelectItem value="20">₹20</SelectItem>
+                      <SelectItem value="50">₹50</SelectItem>
+                      <SelectItem value="100">₹100</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white font-bold">Payment Method *</Label>
@@ -1243,7 +1241,8 @@ export function CanteenPortal() {
               department: formData.get('department'),
               quantity: formData.get('quantity'),
               validTill: formData.get('validTill'),
-              couponNumbers: formData.get('couponNumbers')
+              couponNumbers: formData.get('couponNumbers'),
+              couponValue: formData.get('couponValue')
             });
           }}>
             <div className="space-y-4 py-4">
@@ -1279,6 +1278,22 @@ export function CanteenPortal() {
                 <div className="space-y-2">
                   <Label className="text-white font-bold">Valid Till *</Label>
                   <Input name="validTill" type="date" required className="bg-[#0F172A] border-slate-700 text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white font-bold">Coupon Value (₹) *</Label>
+                  <Select name="couponValue" required>
+                    <SelectTrigger className="bg-[#0F172A] border-slate-700 text-white">
+                      <SelectValue placeholder="Select value" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">₹10</SelectItem>
+                      <SelectItem value="20">₹20</SelectItem>
+                      <SelectItem value="50">₹50</SelectItem>
+                      <SelectItem value="100">₹100</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">

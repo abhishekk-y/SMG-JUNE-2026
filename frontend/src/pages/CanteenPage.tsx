@@ -1,42 +1,103 @@
-import React, { useState } from 'react';
-import { Coffee, ShoppingCart, Plus, Minus, CreditCard, Clock, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Coffee, ShoppingCart, Plus, Minus, CreditCard, Clock, Star, CheckCircle, Loader2 } from 'lucide-react';
+import { getCanteenMenu, getCanteenOrders, placeCanteenOrder } from '../services/api';
 
 export const CanteenPage = () => {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
-  const menuItems = [
-    { id: 1, name: 'Veg Thali', price: 80, category: 'Meals', rating: 4.5, available: true },
-    { id: 2, name: 'Non-Veg Thali', price: 120, category: 'Meals', rating: 4.7, available: true },
-    { id: 3, name: 'Paneer Sandwich', price: 50, category: 'Snacks', rating: 4.2, available: true },
-    { id: 4, name: 'Samosa (2 pcs)', price: 20, category: 'Snacks', rating: 4.0, available: true },
-    { id: 5, name: 'Coffee', price: 15, category: 'Beverages', rating: 4.3, available: true },
-    { id: 6, name: 'Tea', price: 10, category: 'Beverages', rating: 4.4, available: true },
-    { id: 7, name: 'Biryani', price: 100, category: 'Meals', rating: 4.8, available: true },
-    { id: 8, name: 'Fruit Juice', price: 30, category: 'Beverages', rating: 4.1, available: true },
+  const API = 'http://localhost:5000/api';
+  const userId = localStorage.getItem('userId');
+
+  // Fallback menu if DB has no menu items yet
+  const defaultMenu = [
+    { _id: 'f1', name: 'Veg Thali', price: 80, category: 'Meals', rating: 4.5, isAvailable: true },
+    { _id: 'f2', name: 'Non-Veg Thali', price: 120, category: 'Meals', rating: 4.7, isAvailable: true },
+    { _id: 'f3', name: 'Paneer Sandwich', price: 50, category: 'Snacks', rating: 4.2, isAvailable: true },
+    { _id: 'f4', name: 'Samosa (2 pcs)', price: 20, category: 'Snacks', rating: 4.0, isAvailable: true },
+    { _id: 'f5', name: 'Coffee', price: 15, category: 'Beverages', rating: 4.3, isAvailable: true },
+    { _id: 'f6', name: 'Tea', price: 10, category: 'Beverages', rating: 4.4, isAvailable: true },
+    { _id: 'f7', name: 'Biryani', price: 100, category: 'Meals', rating: 4.8, isAvailable: true },
+    { _id: 'f8', name: 'Fruit Juice', price: 30, category: 'Beverages', rating: 4.1, isAvailable: true },
   ];
 
-  const addToCart = (item) => {
-    const existing = cart.find(c => c.id === item.id);
+  useEffect(() => {
+    // Fetch menu from backend
+    getCanteenMenu()
+      .then(data => setMenuItems(data.length > 0 ? data : defaultMenu))
+      .catch(() => setMenuItems(defaultMenu));
+
+    // Fetch user's order history
+    if (userId) {
+      getCanteenOrders(userId)
+        .then(data => setOrders(data))
+        .catch(() => setOrders([]));
+    }
+  }, [userId]);
+
+  const addToCart = (item: any) => {
+    const existing = cart.find(c => c._id === item._id);
     if (existing) {
-      setCart(cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
+      setCart(cart.map(c => c._id === item._id ? { ...c, quantity: c.quantity + 1 } : c));
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
     }
   };
 
-  const removeFromCart = (itemId) => {
-    const existing = cart.find(c => c.id === itemId);
+  const removeFromCart = (itemId: string) => {
+    const existing = cart.find(c => c._id === itemId);
+    if (!existing) return;
     if (existing.quantity > 1) {
-      setCart(cart.map(c => c.id === itemId ? { ...c, quantity: c.quantity - 1 } : c));
+      setCart(cart.map(c => c._id === itemId ? { ...c, quantity: c.quantity - 1 } : c));
     } else {
-      setCart(cart.filter(c => c.id !== itemId));
+      setCart(cart.filter(c => c._id !== itemId));
     }
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0 || !userId) return;
+    setIsPlacingOrder(true);
+    try {
+      const orderData = {
+        user: userId,
+        items: cart.map(c => ({ name: c.name, quantity: c.quantity, price: c.price })),
+        totalAmount: Math.round(totalAmount * 1.05),
+        status: 'Preparing',
+        date: new Date().toISOString()
+      };
+      const newOrder = await placeCanteenOrder(orderData);
+      setOrders([newOrder, ...orders]);
+      setCart([]);
+      setOrderSuccess(true);
+      setTimeout(() => setOrderSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Order error:', err);
+      alert(err.message || 'Server connection failed. Please check your connection.');
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  const categories = [...new Set(menuItems.map(i => i.category))];
+
   return (
     <div className="space-y-6">
+      {/* Success Banner */}
+      {orderSuccess && (
+        <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top-4">
+          <CheckCircle className="text-green-500" size={24} />
+          <div>
+            <p className="font-bold text-green-700">Order Placed Successfully!</p>
+            <p className="text-sm text-green-600">Your order is being prepared. Check the order history below.</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] rounded-2xl p-8 text-white shadow-xl">
         <div className="flex items-center justify-between">
@@ -47,8 +108,8 @@ export const CanteenPage = () => {
             <p className="text-[#87CEEB] opacity-90">Order your meals and snacks online</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/20">
-            <p className="text-sm text-[#87CEEB] mb-1">Balance</p>
-            <p className="text-2xl font-bold">₹450</p>
+            <p className="text-sm text-[#87CEEB] mb-1">Cart Items</p>
+            <p className="text-2xl font-bold">{cart.reduce((s, c) => s + c.quantity, 0)}</p>
           </div>
         </div>
       </div>
@@ -56,18 +117,18 @@ export const CanteenPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Menu Items */}
         <div className="lg:col-span-2 space-y-6">
-          {['Meals', 'Snacks', 'Beverages'].map(category => (
+          {categories.map(category => (
             <div key={category} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <h3 className="text-[#1B254B] mb-4">{category}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {menuItems.filter(item => item.category === category).map(item => (
-                  <div key={item.id} className="border-2 border-gray-100 rounded-xl p-4 hover:border-[#0B4DA2] transition-all">
+                  <div key={item._id} className="border-2 border-gray-100 rounded-xl p-4 hover:border-[#0B4DA2] transition-all">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <h4 className="text-[#1B254B] font-bold">{item.name}</h4>
                         <div className="flex items-center gap-1 mt-1">
                           <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                          <span className="text-xs text-[#A3AED0]">{item.rating}</span>
+                          <span className="text-xs text-[#A3AED0]">{item.rating || '4.0'}</span>
                         </div>
                       </div>
                       <p className="font-bold text-[#0B4DA2]">₹{item.price}</p>
@@ -99,14 +160,14 @@ export const CanteenPage = () => {
             <>
               <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
                 {cart.map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={item._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <p className="font-bold text-sm text-[#1B254B]">{item.name}</p>
                       <p className="text-xs text-[#A3AED0]">₹{item.price} each</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item._id)}
                         className="w-7 h-7 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300"
                       >
                         <Minus size={14} />
@@ -135,8 +196,16 @@ export const CanteenPage = () => {
                   <span className="font-bold text-[#1B254B]">Total</span>
                   <span className="font-bold text-[#0B4DA2] text-xl">₹{(totalAmount * 1.05).toFixed(2)}</span>
                 </div>
-                <button className="w-full bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                  <CreditCard size={20} /> Place Order
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={isPlacingOrder || cart.length === 0}
+                  className="w-full bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPlacingOrder ? (
+                    <><Loader2 size={20} className="animate-spin" /> Placing Order...</>
+                  ) : (
+                    <><CreditCard size={20} /> Place Order</>
+                  )}
                 </button>
               </div>
             </>
@@ -144,31 +213,40 @@ export const CanteenPage = () => {
         </div>
       </div>
 
-      {/* Recent Orders */}
+      {/* Recent Orders from Database */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-[#1B254B] mb-4 flex items-center gap-2">
           <Clock size={20} /> Recent Orders
         </h3>
         <div className="space-y-3">
-          {[
-            { id: 'ORD001', items: 'Veg Thali, Coffee', amount: 95, date: 'Dec 12, 2024', status: 'Delivered' },
-            { id: 'ORD002', items: 'Biryani, Juice', amount: 130, date: 'Dec 11, 2024', status: 'Delivered' },
-            { id: 'ORD003', items: 'Samosa, Tea', amount: 30, date: 'Dec 10, 2024', status: 'Delivered' },
-          ].map(order => (
-            <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+          {orders.length > 0 ? orders.slice(0, 10).map((order: any) => (
+            <div key={order._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div>
-                <p className="font-bold text-[#1B254B] text-sm">{order.id}</p>
-                <p className="text-sm text-[#A3AED0]">{order.items}</p>
-                <p className="text-xs text-[#A3AED0] mt-1">{order.date}</p>
+                <p className="font-bold text-[#1B254B] text-sm">{order._id?.slice(-6).toUpperCase()}</p>
+                <p className="text-sm text-[#A3AED0]">
+                  {order.items?.map((i: any) => `${i.name} x${i.quantity}`).join(', ') || 'Order'}
+                </p>
+                <p className="text-xs text-[#A3AED0] mt-1">
+                  {order.date ? new Date(order.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+                </p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-[#1B254B]">₹{order.amount}</p>
-                <span className="text-xs font-bold text-[#05CD99] bg-green-50 px-2 py-1 rounded-lg">
-                  {order.status}
+                <p className="font-bold text-[#1B254B]">₹{order.totalAmount || 0}</p>
+                <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                  order.status === 'Delivered' ? 'text-[#05CD99] bg-green-50' :
+                  order.status === 'Preparing' ? 'text-[#FFB547] bg-orange-50' :
+                  'text-[#0B4DA2] bg-blue-50'
+                }`}>
+                  {order.status || 'Pending'}
                 </span>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-8 text-[#A3AED0]">
+              <Coffee size={32} className="mx-auto mb-2 opacity-30" />
+              <p>No orders yet. Add items to your cart and place an order!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

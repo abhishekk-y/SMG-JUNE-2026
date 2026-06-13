@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
     Utensils,
     Calendar,
-    DollarSign,
+    IndianRupee,
     Home,
     Users,
     Bell,
@@ -23,7 +23,7 @@ interface Department {
 const departments: Department[] = [
     { id: 'canteen', label: 'Canteen', path: '/departments/canteen', icon: <Utensils size={24} /> },
     { id: 'events', label: 'Events', path: '/departments/events', icon: <Calendar size={24} /> },
-    { id: 'finance', label: 'Finance', path: '/departments/finance', icon: <DollarSign size={24} /> },
+    { id: 'finance', label: 'Finance', path: '/departments/finance', icon: <IndianRupee size={24} /> },
     { id: 'guesthouse', label: 'Guesthouse', path: '/departments/guesthouse', icon: <Home size={24} /> },
     { id: 'hr', label: 'HR', path: '/departments/hr', icon: <Users size={24} /> },
     { id: 'reception', label: 'Reception', path: '/departments/reception', icon: <Bell size={24} /> },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
     Package,
@@ -34,7 +34,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 
-import { triggerGlobalNotification } from '../../services/api';
+import { triggerGlobalNotification, getDeptStore, saveDeptStore } from '../../services/api';
 
 interface ProductionOrder {
     id: string;
@@ -57,6 +57,105 @@ interface QualityCheck {
     batchNumber: string;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
+const defaultOrders: ProductionOrder[] = [
+    {
+        id: 'PO001',
+        productName: 'SMG E-Scooter Model X',
+        quantity: 50,
+        status: 'in-progress',
+        assignedTo: 'Assembly Line A',
+        dueDate: '2025-01-20',
+        priority: 'high',
+        completedUnits: 25
+    },
+    {
+        id: 'PO002',
+        productName: 'SMG E-Scooter Model Y',
+        quantity: 30,
+        status: 'pending',
+        assignedTo: 'Assembly Line B',
+        dueDate: '2025-01-25',
+        priority: 'medium',
+        completedUnits: 0
+    },
+    {
+        id: 'PO003',
+        productName: 'SMG E-Bike Pro',
+        quantity: 20,
+        status: 'completed',
+        assignedTo: 'Assembly Line A',
+        dueDate: '2025-01-15',
+        priority: 'low',
+        completedUnits: 20
+    }
+];
+
+const defaultQualityChecks: QualityCheck[] = [
+    { id: 'QC001', orderId: 'PO001', inspector: 'Vikram Singh', result: 'pass', notes: 'All units passed', date: '2025-01-12', batchNumber: 'B-45' },
+    { id: 'QC002', orderId: 'PO002', inspector: 'Priya Sharma', result: 'pending', notes: 'Awaiting inspection', date: '2025-01-14', batchNumber: 'B-46' },
+    { id: 'QC003', orderId: 'PO001', inspector: 'Rajesh Kumar', result: 'fail', notes: 'Minor defects found in wiring', date: '2025-01-13', batchNumber: 'B-44' }
+];
+
 export function AssemblyPortal() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -72,44 +171,8 @@ export function AssemblyPortal() {
         { id: 4, title: 'Order Completed', message: 'PO003 - SMG E-Bike Pro completed successfully', time: '2 hours ago', type: 'success' }
     ];
 
-    const [orders, setOrders] = useState<ProductionOrder[]>([
-        {
-            id: 'PO001',
-            productName: 'SMG E-Scooter Model X',
-            quantity: 50,
-            status: 'in-progress',
-            assignedTo: 'Assembly Line A',
-            dueDate: '2025-01-20',
-            priority: 'high',
-            completedUnits: 25
-        },
-        {
-            id: 'PO002',
-            productName: 'SMG E-Scooter Model Y',
-            quantity: 30,
-            status: 'pending',
-            assignedTo: 'Assembly Line B',
-            dueDate: '2025-01-25',
-            priority: 'medium',
-            completedUnits: 0
-        },
-        {
-            id: 'PO003',
-            productName: 'SMG E-Bike Pro',
-            quantity: 20,
-            status: 'completed',
-            assignedTo: 'Assembly Line A',
-            dueDate: '2025-01-15',
-            priority: 'low',
-            completedUnits: 20
-        }
-    ]);
-
-    const [qualityChecks, setQualityChecks] = useState<QualityCheck[]>([
-        { id: 'QC001', orderId: 'PO001', inspector: 'Vikram Singh', result: 'pass', notes: 'All units passed', date: '2025-01-12', batchNumber: 'B-45' },
-        { id: 'QC002', orderId: 'PO002', inspector: 'Priya Sharma', result: 'pending', notes: 'Awaiting inspection', date: '2025-01-14', batchNumber: 'B-46' },
-        { id: 'QC003', orderId: 'PO001', inspector: 'Rajesh Kumar', result: 'fail', notes: 'Minor defects found in wiring', date: '2025-01-13', batchNumber: 'B-44' }
-    ]);
+    const { data: orders, api: ordersApi } = useDataStore('assembly:orders', defaultOrders);
+    const { data: qualityChecks, api: qualityChecksApi, setData: setQualityChecks } = useDataStore('assembly:quality', defaultQualityChecks);
 
     const [newOrder, setNewOrder] = useState({
         productName: '',
@@ -123,7 +186,7 @@ export function AssemblyPortal() {
         { title: 'Active Orders', value: orders.filter(o => o.status === 'in-progress').length.toString(), icon: ClipboardList, color: 'text-blue-600', bgColor: 'bg-blue-100' },
         { title: 'Units Completed', value: orders.reduce((sum, o) => sum + o.completedUnits, 0).toString(), icon: Package, color: 'text-green-600', bgColor: 'bg-green-100' },
         { title: 'Pending QC', value: qualityChecks.filter(q => q.result === 'pending').length.toString(), icon: AlertTriangle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-        { title: 'QC Pass Rate', value: `${Math.round((qualityChecks.filter(q => q.result === 'pass').length / qualityChecks.length) * 100)}%`, icon: TrendingUp, color: 'text-purple-600', bgColor: 'bg-purple-100' }
+        { title: 'QC Pass Rate', value: qualityChecks.length > 0 ? `${Math.round((qualityChecks.filter(q => q.result === 'pass').length / qualityChecks.length) * 100)}%` : '0%', icon: TrendingUp, color: 'text-purple-600', bgColor: 'bg-purple-100' }
     ];
 
     const sidebarMenuItems = [
@@ -136,7 +199,7 @@ export function AssemblyPortal() {
         { icon: Settings, label: 'Settings', value: 'settings' }
     ];
 
-    const handleCreateOrder = () => {
+    const handleCreateOrder = async () => {
         if (newOrder.productName && newOrder.quantity) {
             const orderId = `PO${String(orders.length + 1).padStart(3, '0')}`;
             const order: ProductionOrder = {
@@ -149,7 +212,7 @@ export function AssemblyPortal() {
                 priority: newOrder.priority as 'low' | 'medium' | 'high',
                 completedUnits: 0
             };
-            setOrders([order, ...orders]);
+            await ordersApi.add(order);
             setNewOrder({ productName: '', quantity: '', assignedTo: '', dueDate: '', priority: 'medium' });
             setShowNewOrderDialog(false);
             triggerGlobalNotification('Assembly', `New production order ${orderId} for ${order.productName} has been created and assigned to ${order.assignedTo}.`, 'info');
@@ -157,8 +220,8 @@ export function AssemblyPortal() {
         }
     };
 
-    const handleUpdateStatus = (orderId: string, newStatus: ProductionOrder['status']) => {
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    const handleUpdateStatus = async (orderId: string, newStatus: ProductionOrder['status']) => {
+        await ordersApi.update((o: ProductionOrder) => o.id === orderId, () => ({ status: newStatus }));
         alert(`Order ${orderId} status updated to ${newStatus}`);
     };
 

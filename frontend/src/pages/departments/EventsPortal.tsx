@@ -1,43 +1,25 @@
-// Events Portal - Complete with team-provided components
+// Events Portal - Premium UI Theme
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { getDeptStore, saveDeptStore } from '../../services/api';
-import { NavLink, useNavigate } from 'react-router-dom';
-
-// ============ DEFAULT DATA ============
-const eventEvents = [
-    { id: 'E001', name: 'Annual Townhall', date: '2025-01-15', location: 'Auditorium', status: 'Upcoming' },
-    { id: 'E002', name: 'Safety Training', date: '2025-12-28', location: 'Training Room A', status: 'Open' },
-];
-
-const eventRegistrations = [
-    { id: 'REG1001', eventId: 'E002', attendee: 'Priya Verma', email: 'priya.verma@example.com', status: 'Confirmed' },
-    { id: 'REG1002', eventId: 'E002', attendee: 'Mohit Gupta', email: 'mohit.g@example.com', status: 'Pending' },
-];
-
-const eventSponsors = [
-    { id: 'SP001', name: 'Alpha Corp', tier: 'Gold' },
-    { id: 'SP002', name: 'Beta Ltd', tier: 'Silver' },
-];
-
-const eventVenues = [
-    { id: 'V001', name: 'Auditorium', capacity: 500 },
-    { id: 'V002', name: 'Training Room A', capacity: 60 },
-];
-
-const eventVolunteers = [
-    { id: 'VOL01', name: 'Nisha', role: 'Usher' },
-    { id: 'VOL02', name: 'Karan', role: 'Logistics' },
-];
-
-const eventFeedback = [
-    { id: 'F001', eventId: 'E001', rating: 4, comment: 'Great session!' },
-];
-
-const eventSchedule = [
-    { id: 'SCH-001', eventId: 'E001', title: 'Opening Remarks', start: '2025-01-15T09:00:00', end: '2025-01-15T09:30:00' },
-    { id: 'SCH-002', eventId: 'E001', title: 'Q&A', start: '2025-01-15T11:00:00', end: '2025-01-15T11:30:00' },
-    { id: 'SCH-003', eventId: 'E002', title: 'Safety Basics', start: '2025-12-28T10:00:00', end: '2025-12-28T11:00:00' },
-];
+import {
+  CalendarDays,
+  Ticket,
+  MapPin,
+  Users,
+  MessageSquare,
+  BarChart3,
+  Search,
+  Bell,
+  LogOut,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  Star,
+  Award,
+  Calendar
+} from 'lucide-react';
 
 // ============ HOOKS ============
 function useDataStore(key: string, initialData?: any[]) {
@@ -50,6 +32,9 @@ function useDataStore(key: string, initialData?: any[]) {
         getDeptStore(key).then(res => {
             if (mounted && res && Array.isArray(res)) {
                 setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
             }
         }).catch(err => console.error(err))
         .finally(() => { if(mounted) setLoading(false); });
@@ -122,131 +107,230 @@ function useSort(source: any[], field: string, dir = 'asc') {
 }
 
 // ============ COMPONENTS ============
-function StatCard({ title, value, subtitle, badge, onClick }: any) {
+function StatCard({ title, value, subtitle, icon: Icon, colorClass, onClick }: any) {
     return (
-        <div className="card kpi" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-            <div>
-                <div style={{ fontWeight: 700, fontSize: 18 }}>{value}</div>
-                <div className="label">{title}</div>
+        <motion.button
+            onClick={onClick}
+            whileHover={{ y: -4 }}
+            className="bg-white p-6 rounded-[24px] shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer w-full text-left border border-gray-150/80"
+        >
+            <div className="flex items-start justify-between mb-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${colorClass}`}>
+                    <Icon size={28} className="text-white" />
+                </div>
             </div>
-            {badge && <span className={`badge ${badge.type}`}>{badge.label}</span>}
-            {subtitle && <div style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{subtitle}</div>}
-        </div>
+            <h3 className="text-3xl font-extrabold text-[#1B254B] mb-1">{value}</h3>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{title}</p>
+            {subtitle && <p className="text-xs text-emerald-500 font-semibold mt-2">{subtitle}</p>}
+        </motion.button>
     );
 }
 
-function Topbar() {
+function Topbar({ activeTab, query, setQuery }: { activeTab: string; query: string; setQuery: (q: string) => void }) {
     const [now, setNow] = useState(new Date());
-
     useEffect(() => {
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
-
     const dateStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dayStr = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: '2-digit' });
 
+    const getTitle = () => {
+        switch (activeTab) {
+            case 'dashboard': return 'Event Dashboard';
+            case 'events': return 'Event Management';
+            case 'registrations': return 'Registrations';
+            case 'schedule': return 'Schedule';
+            case 'venues': return 'Venues';
+            case 'sponsors': return 'Sponsors';
+            case 'volunteers': return 'Volunteers';
+            case 'feedback': return 'Feedback';
+            case 'analytics': return 'Analytics';
+            default: return 'Events Portal';
+        }
+    };
+
     return (
-        <div className="topbar">
-            <div className="clock">{dateStr} · {dayStr}</div>
-            <div className="search"><input placeholder="Search pages, actions..." /></div>
-            <div className="actions">
-                <span>✉️</span>
-                <span>🔔</span>
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-30">
+            <div>
+                <h1 className="text-xl font-bold text-[#1B254B]">{getTitle()}</h1>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">{dayStr} · {dateStr}</p>
             </div>
-            <div className="avatar">
-                <div className="pic" />
-                <div className="meta">
-                    <span className="name">Event Manager</span>
-                    <span className="role">Admin</span>
+            
+            <div className="flex items-center gap-6">
+                <div className="relative w-64">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                    <input
+                        type="text"
+                        placeholder="Search records..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full bg-gray-50 text-sm border-0 rounded-xl pl-9 pr-4 py-2.5 focus:ring-2 focus:ring-[#0B4DA2] focus:bg-white transition-all text-gray-800 placeholder-gray-400"
+                    />
+                </div>
+                
+                <button className="relative p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-gray-600">
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                </button>
+
+                <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shadow-pink-200">
+                        EM
+                    </div>
+                    <div>
+                        <div className="text-sm font-semibold text-[#1B254B] leading-tight">Event Manager</div>
+                        <div className="text-[11px] font-medium text-gray-400">Admin</div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </header>
     );
 }
 
 function Sidebar({ activeTab, onTabChange, onLogout }: { activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void }) {
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-        { id: 'events', label: 'Events', icon: '🎟️' },
-        { id: 'registrations', label: 'Registrations', icon: '📝' },
-        { id: 'schedule', label: 'Schedule', icon: '🗓️' },
-        { id: 'venues', label: 'Venues', icon: '📍' },
-        { id: 'sponsors', label: 'Sponsors', icon: '🤝' },
-        { id: 'volunteers', label: 'Volunteers', icon: '🧑‍🤝‍🧑' },
-        { id: 'feedback', label: 'Feedback', icon: '💬' },
-        { id: 'analytics', label: 'Analytics', icon: '📊' },
+        { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+        { id: 'events', label: 'Events', icon: CalendarDays },
+        { id: 'registrations', label: 'Registrations', icon: Ticket },
+        { id: 'schedule', label: 'Schedule', icon: Clock },
+        { id: 'venues', label: 'Venues', icon: MapPin },
+        { id: 'sponsors', label: 'Sponsors', icon: Award },
+        { id: 'volunteers', label: 'Volunteers', icon: Users },
+        { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     ];
 
     return (
-        <aside className="sidebar">
-            <div className="brand">
-                <img src="/Company Logo.jpg" alt="SMG" style={{ width: '100%', height: 'auto', marginBottom: 16 }} />
+        <aside className="w-64 bg-white flex flex-col h-screen sticky top-0 z-40 border-r border-gray-100 shadow-lg">
+            <div className="p-6 border-b border-gray-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
+                    <Calendar className="w-5 h-5" />
+                </div>
                 <div>
-                    <div style={{ fontWeight: 700 }}>SMG Events Portal</div>
-                    <small style={{ opacity: 0.8 }}>Event Management</small>
+                    <h2 className="text-base font-bold text-[#1B254B] tracking-tight leading-none">SMG Events</h2>
+                    <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">Event Hub</span>
                 </div>
             </div>
 
-            <div className="section-title">Event Management</div>
-            {menuItems.map(item => (
-                <button
-                    key={item.id}
-                    onClick={() => onTabChange(item.id)}
-                    className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                    style={{ border: 'none', background: activeTab === item.id ? 'var(--primary)' : 'transparent', color: activeTab === item.id ? '#fff' : 'inherit', textAlign: 'left', width: '100%', padding: '12px 16px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}
-                >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                </button>
-            ))}
+            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 block mb-3">Management</span>
+                {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => onTabChange(item.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold tracking-tight transition-all ${
+                                isActive 
+                                    ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md shadow-pink-500/20' 
+                                    : 'hover:bg-gray-50 text-gray-600'
+                            }`}
+                        >
+                            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                            {item.label}
+                        </button>
+                    );
+                })}
+            </nav>
 
-            <div className="spacer" style={{ flex: 1 }} />
-            <button onClick={onLogout} className="signout nav-item" style={{ border: 'none', background: 'transparent', textAlign: 'left', padding: '12px 16px', cursor: 'pointer' }}>↪ Sign Out</button>
+            <div className="p-4 border-t border-gray-100">
+                <button 
+                    onClick={onLogout} 
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-gray-50 hover:bg-rose-50 hover:text-rose-600 text-gray-600 rounded-xl text-sm font-semibold transition-all border border-gray-200"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                </button>
+            </div>
         </aside>
     );
 }
 
 function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode }) {
-    if (!open) return null;
     return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, minWidth: 400, maxWidth: 500 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>{title}</h3>
-                    <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
+        <AnimatePresence>
+            {open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" 
+                    />
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 relative z-10 overflow-hidden"
+                    >
+                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h3 className="text-base font-bold text-gray-900">{title}</h3>
+                            <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-xl text-gray-400 hover:text-gray-600 transition-all">
+                                ✕
+                            </button>
+                        </div>
+                        <div className="p-6 max-h-[80vh] overflow-y-auto">
+                            {children}
+                        </div>
+                    </motion.div>
                 </div>
-                {children}
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }
 
 // ============ PORTAL VIEWS ============
+const defaultEvents = [
+    { id: 'E001', name: 'Annual Townhall', date: '2025-01-15', location: 'Auditorium', status: 'Upcoming' },
+    { id: 'E002', name: 'Safety Training', date: '2025-12-28', location: 'Training Room A', status: 'Open' },
+];
+
+const defaultRegistrations = [
+    { id: 'REG1001', eventId: 'E002', attendee: 'Priya Verma', email: 'priya.verma@example.com', status: 'Confirmed' },
+    { id: 'REG1002', eventId: 'E002', attendee: 'Mohit Gupta', email: 'mohit.g@example.com', status: 'Pending' },
+];
+
 function Dashboard({ onTabChange }: { onTabChange: (tab: string) => void }) {
+    const { data: events } = useDataStore('event:events', defaultEvents);
+    const { data: registrations } = useDataStore('event:registrations', defaultRegistrations);
+
     return (
-        <div>
-            <div className="hero">
-                <div className="title">Event Portal · Overview</div>
-            </div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <StatCard title="Upcoming Events" value={eventEvents.filter(e => e.status === 'Upcoming').length} onClick={() => onTabChange('events')} />
-                <StatCard title="Open Registrations" value={eventRegistrations.filter(r => r.status === 'Pending').length} onClick={() => onTabChange('registrations')} />
-                <StatCard title="Total Attendees" value={eventRegistrations.length} />
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard 
+                    title="Upcoming Events" 
+                    value={events.filter(e => e.status === 'Upcoming').length} 
+                    icon={CalendarDays}
+                    colorClass="bg-gradient-to-br from-pink-500 to-pink-600"
+                    onClick={() => onTabChange('events')} 
+                />
+                <StatCard 
+                    title="Open Registrations" 
+                    value={registrations.filter(r => r.status === 'Pending').length} 
+                    icon={Ticket}
+                    colorClass="bg-gradient-to-br from-blue-500 to-blue-600"
+                    onClick={() => onTabChange('registrations')} 
+                    subtitle="Action Required"
+                />
+                <StatCard 
+                    title="Total Attendees" 
+                    value={registrations.length} 
+                    icon={Users}
+                    colorClass="bg-gradient-to-br from-emerald-500 to-emerald-600"
+                />
             </div>
         </div>
     );
 }
 
-function EventsView() {
-    const { data, api } = useDataStore('event:events', eventEvents);
-    const [query, setQuery] = useState('');
+function EventsView({ query }: { query: string }) {
+    const { data, api } = useDataStore('event:events', defaultEvents);
     const [createOpen, setCreateOpen] = useState(false);
-    const [sortBy, setSortBy] = useState('date');
-    const [sortDir, setSortDir] = useState('asc');
-
     const filtered = useSearch(data, ['name', 'location', 'status'], query);
-    const events = useSort(filtered, sortBy, sortDir);
+    const events = useSort(filtered, 'date', 'asc');
 
     const removeEvent = async (id: string) => {
         await api.remove((e: any) => e.id === id);
@@ -263,60 +347,79 @@ function EventsView() {
         const id = `E${Math.floor(100 + Math.random() * 900)}`;
         await api.add({ id, name, location, date, status });
         setCreateOpen(false);
-        e.currentTarget.reset();
     };
 
     return (
-        <div>
-            <div className="hero">
-                <div className="title">Event Management</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <input placeholder="Search events..." value={query} onChange={e => setQuery(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
-                    <button className="btn" onClick={() => setCreateOpen(true)} style={{ background: 'var(--primary)', color: '#fff', padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer' }}>+ Create Event</button>
-                </div>
+        <div className="space-y-6">
+            <div className="flex justify-end">
+                <button 
+                    onClick={() => setCreateOpen(true)} 
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-pink-500/20"
+                >
+                    <Plus className="w-4 h-4" /> Create Event
+                </button>
             </div>
-            <div className="card" style={{ marginTop: 16, background: '#fff', borderRadius: 16, padding: 16 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            
+            <div className="bg-white rounded-2xl border border-gray-150/80 shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr style={{ borderBottom: '1px solid #eee' }}>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Event</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Date</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Location</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Status</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Actions</th>
+                        <tr className="bg-gray-50/50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <th className="p-4 pl-6">Event Name</th>
+                            <th className="p-4">Date</th>
+                            <th className="p-4">Location</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4 text-center pr-6">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-100">
                         {events.map((ev: any) => (
-                            <tr key={ev.id} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: 12 }}>{ev.name}</td>
-                                <td style={{ padding: 12 }}>{ev.date}</td>
-                                <td style={{ padding: 12 }}>{ev.location}</td>
-                                <td style={{ padding: 12 }}><span style={{ background: ev.status === 'Upcoming' ? '#dcfce7' : '#fef3c7', color: ev.status === 'Upcoming' ? '#15803d' : '#b45309', padding: '4px 8px', borderRadius: 4, fontSize: 12 }}>{ev.status}</span></td>
-                                <td style={{ padding: 12 }}><button onClick={() => removeEvent(ev.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>🗑️</button></td>
+                            <tr key={ev.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="p-4 pl-6 font-bold text-[#1B254B]">{ev.name}</td>
+                                <td className="p-4 text-sm font-semibold text-gray-600">{ev.date}</td>
+                                <td className="p-4 text-sm text-gray-600">{ev.location}</td>
+                                <td className="p-4">
+                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${
+                                        ev.status === 'Upcoming' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                                    }`}>
+                                        {ev.status}
+                                    </span>
+                                </td>
+                                <td className="p-4 text-center pr-6">
+                                    <button onClick={() => removeEvent(ev.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
-            <Modal open={createOpen} title="Create Event" onClose={() => setCreateOpen(false)}>
-                <form onSubmit={onCreate} style={{ display: 'grid', gap: 12 }}>
-                    <label style={{ fontWeight: 600 }}>Name</label>
-                    <input name="name" placeholder="Annual Townhall" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
-                    <label style={{ fontWeight: 600 }}>Date</label>
-                    <input name="date" type="date" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
-                    <label style={{ fontWeight: 600 }}>Location</label>
-                    <input name="location" placeholder="Auditorium" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
-                    <label style={{ fontWeight: 600 }}>Status</label>
-                    <select name="status" style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }}>
-                        <option>Upcoming</option>
-                        <option>Open</option>
-                        <option>Closed</option>
-                    </select>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <button type="submit" style={{ background: 'var(--primary)', color: '#fff', padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer' }}>Save</button>
-                        <button type="button" onClick={() => setCreateOpen(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #ddd', cursor: 'pointer' }}>Cancel</button>
+            <Modal open={createOpen} title="Create New Event" onClose={() => setCreateOpen(false)}>
+                <form onSubmit={onCreate} className="space-y-4">
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Event Name</label>
+                        <input name="name" placeholder="Annual Townhall" className="w-full text-sm border border-gray-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-pink-500" required />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Date</label>
+                        <input name="date" type="date" className="w-full text-sm border border-gray-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-pink-500" required />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Location</label>
+                        <input name="location" placeholder="Auditorium" className="w-full text-sm border border-gray-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-pink-500" required />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
+                        <select name="status" className="w-full text-sm border border-gray-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-pink-500">
+                            <option>Upcoming</option>
+                            <option>Open</option>
+                            <option>Closed</option>
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl text-sm font-semibold">Save Event</button>
                     </div>
                 </form>
             </Modal>
@@ -324,9 +427,9 @@ function EventsView() {
     );
 }
 
-function RegistrationsView() {
-    const { data, api } = useDataStore('event:registrations', eventRegistrations);
-    const [query, setQuery] = useState('');
+function RegistrationsView({ query }: { query: string }) {
+    const { data, api } = useDataStore('event:registrations', defaultRegistrations);
+    const { data: events } = useDataStore('event:events', defaultEvents);
     const filtered = useSearch(data, ['attendee', 'email', 'status'], query);
 
     const approve = async (id: string) => {
@@ -337,32 +440,43 @@ function RegistrationsView() {
     };
 
     return (
-        <div>
-            <div className="hero">
-                <div className="title">Registrations</div>
-                <input placeholder="Search..." value={query} onChange={e => setQuery(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd' }} />
-            </div>
-            <div className="card" style={{ marginTop: 16, background: '#fff', borderRadius: 16, padding: 16 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-150/80 shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr style={{ borderBottom: '1px solid #eee' }}>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Attendee</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Email</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Event</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Status</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Actions</th>
+                        <tr className="bg-gray-50/50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <th className="p-4 pl-6">Attendee</th>
+                            <th className="p-4">Event</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4 text-center pr-6">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-100">
                         {filtered.map((r: any) => (
-                            <tr key={r.id} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: 12 }}>{r.attendee}</td>
-                                <td style={{ padding: 12 }}>{r.email}</td>
-                                <td style={{ padding: 12 }}>{eventEvents.find(e => e.id === r.eventId)?.name || r.eventId}</td>
-                                <td style={{ padding: 12 }}><span style={{ background: r.status === 'Confirmed' ? '#dcfce7' : '#fef3c7', color: r.status === 'Confirmed' ? '#15803d' : '#b45309', padding: '4px 8px', borderRadius: 4, fontSize: 12 }}>{r.status}</span></td>
-                                <td style={{ padding: 12 }}>
-                                    {r.status !== 'Confirmed' && <button onClick={() => approve(r.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✅</button>}
-                                    <button onClick={() => remove(r.id)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>🗑️</button>
+                            <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="p-4 pl-6">
+                                    <div className="font-bold text-[#1B254B]">{r.attendee}</div>
+                                    <div className="text-xs text-gray-500">{r.email}</div>
+                                </td>
+                                <td className="p-4 text-sm font-semibold text-gray-600">{events.find(e => e.id === r.eventId)?.name || r.eventId}</td>
+                                <td className="p-4">
+                                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${
+                                        r.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                                    }`}>
+                                        {r.status}
+                                    </span>
+                                </td>
+                                <td className="p-4 text-center pr-6">
+                                    <div className="flex items-center justify-center gap-2">
+                                        {r.status !== 'Confirmed' && (
+                                            <button onClick={() => approve(r.id)} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <button onClick={() => remove(r.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -373,117 +487,16 @@ function RegistrationsView() {
     );
 }
 
-function VenuesView() {
-    const { data } = useDataStore('event:venues', eventVenues);
-    return (
-        <div>
-            <div className="hero"><div className="title">Venues</div></div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {data.map((v: any) => (
-                    <div key={v.id} style={{ background: '#fff', borderRadius: 16, padding: 20 }}>
-                        <h3 style={{ margin: 0 }}>{v.name}</h3>
-                        <p style={{ color: '#666', margin: '8px 0 0' }}>Capacity: {v.capacity}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function SponsorsView() {
-    const { data } = useDataStore('event:sponsors', eventSponsors);
-    return (
-        <div>
-            <div className="hero"><div className="title">Sponsors</div></div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {data.map((s: any) => (
-                    <div key={s.id} style={{ background: '#fff', borderRadius: 16, padding: 20 }}>
-                        <h3 style={{ margin: 0 }}>{s.name}</h3>
-                        <span style={{ background: s.tier === 'Gold' ? '#fef3c7' : '#e0e7ff', color: s.tier === 'Gold' ? '#b45309' : '#4338ca', padding: '4px 8px', borderRadius: 4, fontSize: 12 }}>{s.tier}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function VolunteersView() {
-    const { data } = useDataStore('event:volunteers', eventVolunteers);
-    return (
-        <div>
-            <div className="hero"><div className="title">Volunteers</div></div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                {data.map((v: any) => (
-                    <div key={v.id} style={{ background: '#fff', borderRadius: 16, padding: 20 }}>
-                        <h3 style={{ margin: 0 }}>{v.name}</h3>
-                        <p style={{ color: '#666', margin: '8px 0 0' }}>{v.role}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function FeedbackView() {
-    const { data } = useDataStore('event:feedback', eventFeedback);
-    return (
-        <div>
-            <div className="hero"><div className="title">Feedback</div></div>
-            <div style={{ marginTop: 16 }}>
-                {data.map((f: any) => (
-                    <div key={f.id} style={{ background: '#fff', borderRadius: 16, padding: 20, marginBottom: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>{'⭐'.repeat(f.rating)}</span>
-                            <span style={{ color: '#666' }}>({f.rating}/5)</span>
-                        </div>
-                        <p style={{ margin: '8px 0 0' }}>{f.comment}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function ScheduleView() {
-    const { data } = useDataStore('event:schedule', eventSchedule);
-    return (
-        <div>
-            <div className="hero"><div className="title">Schedule</div></div>
-            <div className="card" style={{ marginTop: 16, background: '#fff', borderRadius: 16, padding: 16 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid #eee' }}>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Event</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Title</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>Start</th>
-                            <th style={{ textAlign: 'left', padding: 12 }}>End</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map((s: any) => (
-                            <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: 12 }}>{eventEvents.find(e => e.id === s.eventId)?.name || s.eventId}</td>
-                                <td style={{ padding: 12 }}>{s.title}</td>
-                                <td style={{ padding: 12 }}>{new Date(s.start).toLocaleString()}</td>
-                                <td style={{ padding: 12 }}>{new Date(s.end).toLocaleString()}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-}
-
+// 4. Analytics View
 function AnalyticsView() {
+    const { data: events } = useDataStore('event:events', defaultEvents);
+    const { data: registrations } = useDataStore('event:registrations', defaultRegistrations);
+    
     return (
-        <div>
-            <div className="hero"><div className="title">Analytics</div></div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <StatCard title="Total Events" value={eventEvents.length} />
-                <StatCard title="Total Registrations" value={eventRegistrations.length} />
-                <StatCard title="Confirmed" value={eventRegistrations.filter(r => r.status === 'Confirmed').length} />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard title="Total Events" value={events.length} icon={CalendarDays} colorClass="bg-pink-500" />
+            <StatCard title="Total Registrations" value={registrations.length} icon={Ticket} colorClass="bg-blue-500" />
+            <StatCard title="Confirmed" value={registrations.filter(r => r.status === 'Confirmed').length} icon={CheckCircle2} colorClass="bg-emerald-500" />
         </div>
     );
 }
@@ -491,6 +504,7 @@ function AnalyticsView() {
 // ============ MAIN PORTAL ============
 export function EventsPortal() {
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [query, setQuery] = useState('');
 
     const handleLogout = () => {
         window.location.reload();
@@ -499,25 +513,34 @@ export function EventsPortal() {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard': return <Dashboard onTabChange={setActiveTab} />;
-            case 'events': return <EventsView />;
-            case 'registrations': return <RegistrationsView />;
-            case 'schedule': return <ScheduleView />;
-            case 'venues': return <VenuesView />;
-            case 'sponsors': return <SponsorsView />;
-            case 'volunteers': return <VolunteersView />;
-            case 'feedback': return <FeedbackView />;
+            case 'events': return <EventsView query={query} />;
+            case 'registrations': return <RegistrationsView query={query} />;
             case 'analytics': return <AnalyticsView />;
-            default: return <Dashboard onTabChange={setActiveTab} />;
+            default: return (
+                <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl border border-gray-150 border-dashed">
+                    <CalendarDays className="w-12 h-12 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">Module under development</h3>
+                    <p className="text-sm text-gray-500">This section is being upgraded with the new premium design.</p>
+                </div>
+            );
         }
     };
 
     return (
-        <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="flex h-screen bg-[#F4F7FE] overflow-hidden">
             <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
-            <div className="content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Topbar />
-                <main className="page" style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-                    {renderContent()}
+            <div className="flex-1 flex flex-col min-w-0">
+                <Topbar activeTab={activeTab} query={query} setQuery={setQuery} />
+                <main className="flex-1 overflow-y-auto p-8">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="max-w-7xl mx-auto"
+                    >
+                        {renderContent()}
+                    </motion.div>
                 </main>
             </div>
         </div>

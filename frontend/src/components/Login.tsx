@@ -117,7 +117,7 @@ export function Login({ onLogin }: LoginProps) {
           >
             <div className="flex flex-col items-center justify-center gap-4 mb-2">
               <img src="/Company Logo.jpg" alt="SMG Logo" className="h-20 w-auto object-contain" />
-              <h1 className="text-4xl font-bold tracking-wider text-black">SMG Scooters Pvt Ltd</h1>
+              <h1 className="text-4xl font-bold tracking-wider text-black">SMG Electric Scooter Ltd</h1>
             </div>
             <motion.p
               className="text-gray-600 mt-2"

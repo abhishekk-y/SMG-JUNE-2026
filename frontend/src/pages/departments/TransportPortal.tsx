@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Bus,
@@ -36,6 +36,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Textarea } from '../../components/ui/textarea';
+import { getDeptStore, saveDeptStore } from '../../services/api';
 
 // Simple toast replacement for notifications
 const toast = {
@@ -55,6 +56,66 @@ interface TransportRequest {
   details: any;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
 // Get dynamic greeting based on time
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -63,25 +124,7 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
-export function TransportPortal() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showBusPassDialog, setShowBusPassDialog] = useState(false);
-  const [showParkingDialog, setShowParkingDialog] = useState(false);
-  const [showTripDialog, setShowTripDialog] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [greeting, setGreeting] = useState(getGreeting());
-
-  // Update greeting every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setGreeting(getGreeting());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const [requests, setRequests] = useState<TransportRequest[]>([
+const defaultRequests: TransportRequest[] = [
     {
       id: 'TR001',
       type: 'bus',
@@ -126,7 +169,27 @@ export function TransportPortal() {
         travelMode: 'Flight'
       }
     }
-  ]);
+];
+
+export function TransportPortal() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showBusPassDialog, setShowBusPassDialog] = useState(false);
+  const [showParkingDialog, setShowParkingDialog] = useState(false);
+  const [showTripDialog, setShowTripDialog] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [greeting, setGreeting] = useState(getGreeting());
+
+  // Update greeting every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGreeting(getGreeting());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { data: requests, api } = useDataStore('transport:requests', defaultRequests);
 
   const notifications = [
     { id: 1, message: 'New bus pass request from Rohit Sharma', time: '5 mins ago', type: 'request', read: false },
@@ -141,21 +204,13 @@ export function TransportPortal() {
     tripsThisMonth: 24
   };
 
-  const handleApprove = (requestId: string) => {
-    setRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'approved' as const } : req
-      )
-    );
+  const handleApprove = async (requestId: string) => {
+    await api.update((req: TransportRequest) => req.id === requestId, () => ({ status: 'approved' }));
     toast.success('Request approved successfully');
   };
 
-  const handleReject = (requestId: string) => {
-    setRequests(prev =>
-      prev.map(req =>
-        req.id === requestId ? { ...req, status: 'rejected' as const } : req
-      )
-    );
+  const handleReject = async (requestId: string) => {
+    await api.update((req: TransportRequest) => req.id === requestId, () => ({ status: 'rejected' }));
     toast.success('Request rejected');
   };
 

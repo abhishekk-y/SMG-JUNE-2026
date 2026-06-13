@@ -86,7 +86,7 @@ export default function Sidebar({ portal }) {
       <div className="brand">
         <div className="logo">SMG</div>
         <div>
-          <div>SMG Scooters</div>
+          <div>SMG Electric</div>
           <small style={{opacity:0.8}}>Admin Portal</small>
         </div>
       </div>

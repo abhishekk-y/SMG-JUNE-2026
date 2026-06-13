@@ -164,7 +164,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
               <span className="text-white font-bold text-lg">S</span>
             </div>
             <div>
-              <h3 className="text-sm" style={{ color: 'var(--smg-dark)' }}>SMG Scooters Pvt Ltd</h3>
+              <h3 className="text-sm" style={{ color: 'var(--smg-dark)' }}>SMG Electric Scooter Ltd</h3>
               <p className="text-xs text-gray-400">Admin Portal</p>
             </div>
           </div>
@@ -275,7 +275,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
         <div className="px-4 py-3" style={{ borderTop: '1px solid var(--smg-border)' }}>
           <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-xl p-3">
             <p className="text-xs text-gray-600 mb-1">Powered by</p>
-            <p className="text-sm text-[#0B4DA2]">SMG Scooters Pvt Ltd</p>
+            <p className="text-sm text-[#0B4DA2]">SMG Electric Scooter Ltd</p>
           </div>
         </div>
       )}

@@ -105,13 +105,13 @@ export const generatePDF = (content: string, filename: string) => {
       </head>
       <body>
         <div class="header">
-          <div class="logo">SMG Scooters Pvt Ltd</div>
+          <div class="logo">SMG Electric Scooter Ltd</div>
           <div class="meta">Generated on ${new Date().toLocaleString('en-IN')}</div>
         </div>
         ${content}
         <div class="footer">
           <p>This is a computer-generated document from SMG Employee Portal</p>
-          <p>© ${new Date().getFullYear()} SMG Scooters Pvt Ltd. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} SMG Electric Scooter Ltd. All rights reserved.</p>
         </div>
       </body>
     </html>

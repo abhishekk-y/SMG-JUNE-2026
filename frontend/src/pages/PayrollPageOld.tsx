@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  DollarSign, 
+  IndianRupee, 
   Download, 
   Eye, 
   Calendar,
@@ -108,7 +108,7 @@ export const PayrollPageOld = ({ user }) => {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl">
-              <DollarSign size={32} />
+              <IndianRupee size={32} />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Payroll & Salary</h1>

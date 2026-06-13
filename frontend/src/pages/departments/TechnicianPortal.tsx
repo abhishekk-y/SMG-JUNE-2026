@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
     Wrench,
@@ -36,6 +36,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 
+import { getDeptStore, saveDeptStore } from '../../services/api';
+
 interface MaintenanceRequest {
     id: string;
     equipmentName: string;
@@ -61,6 +63,115 @@ interface Equipment {
     nextService: string;
 }
 
+// ============ HOOKS ============
+function useDataStore(key: string, initialData?: any[]) {
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        getDeptStore(key).then(res => {
+            if (mounted && res && Array.isArray(res)) {
+                setData(res);
+            } else if (mounted && initialData) {
+                setData(initialData);
+                saveDeptStore(key, initialData);
+            }
+        }).catch(err => console.error(err))
+        .finally(() => { if(mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, [key]);
+
+    const api = useMemo(() => ({
+        async add(item: any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = [...prev, item];
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+            return item;
+        },
+        async update(matchFn: (it: any) => boolean, updater: (it: any) => any) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.map(it => (matchFn(it) ? { ...it, ...updater(it) } : it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+        async remove(matchFn: (it: any) => boolean) {
+            setLoading(true);
+            let newData: any[] = [];
+            setData((prev: any[]) => {
+                newData = prev.filter(it => !matchFn(it));
+                return newData;
+            });
+            await new Promise(r => setTimeout(r, 0));
+            await saveDeptStore(key, newData);
+            setLoading(false);
+        },
+    }), [key]);
+
+    return { data, setData, api, loading };
+}
+
+const defaultRequests: MaintenanceRequest[] = [
+    {
+        id: 'MR001',
+        equipmentName: 'CNC Machine A1',
+        equipmentId: 'CNC-001',
+        department: 'Assembly',
+        issueType: 'breakdown',
+        priority: 'critical',
+        status: 'pending',
+        reportedBy: 'Rohit Sharma',
+        reportedDate: '2025-01-15',
+        description: 'Machine not starting, power issue suspected'
+    },
+    {
+        id: 'MR002',
+        equipmentName: 'Conveyor Belt B2',
+        equipmentId: 'CONV-002',
+        department: 'Production',
+        issueType: 'repair',
+        priority: 'high',
+        status: 'in-progress',
+        reportedBy: 'Amit Kumar',
+        reportedDate: '2025-01-14',
+        assignedTo: 'Vikram Singh',
+        description: 'Belt slipping, needs replacement',
+        estimatedTime: '4 hours'
+    },
+    {
+        id: 'MR003',
+        equipmentName: 'Packaging Machine C1',
+        equipmentId: 'PKG-001',
+        department: 'Packaging',
+        issueType: 'preventive',
+        priority: 'medium',
+        status: 'completed',
+        reportedBy: 'Priya Patel',
+        reportedDate: '2025-01-10',
+        assignedTo: 'Rajesh Kumar',
+        description: 'Monthly preventive maintenance'
+    }
+];
+
+const defaultEquipment: Equipment[] = [
+    { id: 'CNC-001', name: 'CNC Machine A1', type: 'CNC', location: 'Assembly Hall A', status: 'maintenance', lastService: '2024-12-15', nextService: '2025-03-15' },
+    { id: 'CONV-002', name: 'Conveyor Belt B2', type: 'Conveyor', location: 'Production Line B', status: 'repair', lastService: '2024-11-20', nextService: '2025-02-20' },
+    { id: 'PKG-001', name: 'Packaging Machine C1', type: 'Packaging', location: 'Packaging Zone C', status: 'operational', lastService: '2025-01-10', nextService: '2025-04-10' },
+    { id: 'WLD-003', name: 'Welding Station D3', type: 'Welding', location: 'Welding Bay D', status: 'operational', lastService: '2024-12-01', nextService: '2025-03-01' }
+];
+
 export function TechnicianPortal() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -75,54 +186,8 @@ export function TechnicianPortal() {
         { id: 4, title: 'Request Completed', message: 'Motor Assembly Unit repair completed successfully', time: '2 hours ago', type: 'success' }
     ];
 
-    const [requests, setRequests] = useState<MaintenanceRequest[]>([
-        {
-            id: 'MR001',
-            equipmentName: 'CNC Machine A1',
-            equipmentId: 'CNC-001',
-            department: 'Assembly',
-            issueType: 'breakdown',
-            priority: 'critical',
-            status: 'pending',
-            reportedBy: 'Rohit Sharma',
-            reportedDate: '2025-01-15',
-            description: 'Machine not starting, power issue suspected'
-        },
-        {
-            id: 'MR002',
-            equipmentName: 'Conveyor Belt B2',
-            equipmentId: 'CONV-002',
-            department: 'Production',
-            issueType: 'repair',
-            priority: 'high',
-            status: 'in-progress',
-            reportedBy: 'Amit Kumar',
-            reportedDate: '2025-01-14',
-            assignedTo: 'Vikram Singh',
-            description: 'Belt slipping, needs replacement',
-            estimatedTime: '4 hours'
-        },
-        {
-            id: 'MR003',
-            equipmentName: 'Packaging Machine C1',
-            equipmentId: 'PKG-001',
-            department: 'Packaging',
-            issueType: 'preventive',
-            priority: 'medium',
-            status: 'completed',
-            reportedBy: 'Priya Patel',
-            reportedDate: '2025-01-10',
-            assignedTo: 'Rajesh Kumar',
-            description: 'Monthly preventive maintenance'
-        }
-    ]);
-
-    const [equipment] = useState<Equipment[]>([
-        { id: 'CNC-001', name: 'CNC Machine A1', type: 'CNC', location: 'Assembly Hall A', status: 'maintenance', lastService: '2024-12-15', nextService: '2025-03-15' },
-        { id: 'CONV-002', name: 'Conveyor Belt B2', type: 'Conveyor', location: 'Production Line B', status: 'repair', lastService: '2024-11-20', nextService: '2025-02-20' },
-        { id: 'PKG-001', name: 'Packaging Machine C1', type: 'Packaging', location: 'Packaging Zone C', status: 'operational', lastService: '2025-01-10', nextService: '2025-04-10' },
-        { id: 'WLD-003', name: 'Welding Station D3', type: 'Welding', location: 'Welding Bay D', status: 'operational', lastService: '2024-12-01', nextService: '2025-03-01' }
-    ]);
+    const { data: requests, api: requestsApi } = useDataStore('technician:requests', defaultRequests);
+    const { data: equipment, api: equipmentApi } = useDataStore('technician:equipment', defaultEquipment);
 
     const [newRequest, setNewRequest] = useState({
         equipmentName: '',
@@ -149,7 +214,7 @@ export function TechnicianPortal() {
         { icon: Settings, label: 'Settings', value: 'settings' }
     ];
 
-    const handleCreateRequest = () => {
+    const handleCreateRequest = async () => {
         if (newRequest.equipmentName && newRequest.description) {
             const request: MaintenanceRequest = {
                 id: `MR${String(requests.length + 1).padStart(3, '0')}`,
@@ -163,25 +228,25 @@ export function TechnicianPortal() {
                 reportedDate: new Date().toISOString().split('T')[0],
                 description: newRequest.description
             };
-            setRequests([request, ...requests]);
+            await requestsApi.add(request);
             setNewRequest({ equipmentName: '', equipmentId: '', department: '', issueType: 'repair', priority: 'medium', description: '' });
             setShowNewRequestDialog(false);
             alert('Maintenance request created successfully!');
         }
     };
 
-    const handleAssignRequest = (requestId: string) => {
-        setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'assigned' as const, assignedTo: 'Vikram Singh' } : r));
+    const handleAssignRequest = async (requestId: string) => {
+        await requestsApi.update((r: MaintenanceRequest) => r.id === requestId, () => ({ status: 'assigned' as const, assignedTo: 'Vikram Singh' }));
         alert(`Request ${requestId} assigned to Vikram Singh`);
     };
 
-    const handleStartWork = (requestId: string) => {
-        setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'in-progress' as const } : r));
+    const handleStartWork = async (requestId: string) => {
+        await requestsApi.update((r: MaintenanceRequest) => r.id === requestId, () => ({ status: 'in-progress' as const }));
         alert(`Work started on request ${requestId}`);
     };
 
-    const handleCompleteRequest = (requestId: string) => {
-        setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'completed' as const } : r));
+    const handleCompleteRequest = async (requestId: string) => {
+        await requestsApi.update((r: MaintenanceRequest) => r.id === requestId, () => ({ status: 'completed' as const }));
         alert(`Request ${requestId} marked as completed`);
     };
 

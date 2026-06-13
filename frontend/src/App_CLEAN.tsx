@@ -183,7 +183,7 @@ const Sidebar = ({ activePage, onNavigate, onLogout }) => {
       <div className="p-6 border-b border-[#0B4DA2]/30 flex items-center gap-3 overflow-hidden whitespace-nowrap shrink-0">
         <div className="w-8 h-8 bg-[#0B4DA2] rounded-xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 text-sm">SMG</div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <h2 className="text-white font-bold tracking-wide text-sm">SMG Scooters</h2>
+          <h2 className="text-white font-bold tracking-wide text-sm">SMG Electric</h2>
           <p className="text-[10px] text-[#87CEEB] tracking-widest font-bold opacity-80">EMPLOYEE PORTAL</p>
         </div>
       </div>

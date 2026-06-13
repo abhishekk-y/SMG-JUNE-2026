@@ -34,7 +34,7 @@ const JobDescription = require('../models/JobDescription');
 const KeyRepresentative = require('../models/KeyRepresentative');
 const WelfareProgram = require('../models/WelfareProgram');
 const DepartmentData = require('../models/DepartmentData');
-const { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF } = require('../utils/pdfGenerator');
+const { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF, generateProjectPDF } = require('../utils/pdfGenerator');
 const { sendEmail } = require('../utils/emailSender');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -192,7 +192,7 @@ router.delete('/user/:id', async (req, res) => {
 router.post('/users/create-employee', async (req, res) => {
     try {
         const { name, email, dept, role, designation, phone, shift, reportingTo, dateOfBirth,
-                dateOfJoining, bloodGroup, address, education, certifications, skills, languages, emergencyContact } = req.body;
+                dateOfJoining, bloodGroup, address, education, certifications, skills, languages, emergencyContact, salary } = req.body;
         if (!name || !email || !dept) {
             return res.status(400).json({ message: 'Name, email, and department are required' });
         }
@@ -213,6 +213,11 @@ router.post('/users/create-employee', async (req, res) => {
         const hashedPassword = await bcrypt.hash(rawPassword, 12);
         const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`;
 
+        // Parse salary into a clean number
+        const numericSalary = typeof salary === 'string'
+            ? parseFloat(salary.replace(/[^0-9.]/g, '')) || 0
+            : Number(salary) || 0;
+
         const newUser = await User.create({
             name, email, password: hashedPassword, empId, dept,
             role: role || 'employee', designation: designation || '', phone: phone || '',
@@ -220,7 +225,8 @@ router.post('/users/create-employee', async (req, res) => {
             dateOfBirth: dateOfBirth || '', dateOfJoining: dateOfJoining || new Date().toLocaleDateString('en-IN'),
             bloodGroup: bloodGroup || '', address: address || '', avatar,
             education: education || [], certifications: certifications || [],
-            skills: skills || [], languages: languages || [], emergencyContact: emergencyContact || ''
+            skills: skills || [], languages: languages || [], emergencyContact: emergencyContact || '',
+            salary: numericSalary
         });
 
         // Create welcome notification
@@ -1406,6 +1412,83 @@ router.get('/gatepasses/:userId/stats', async (req, res) => {
         ]);
         const recent = await GatePass.find({ user: userId }).sort({ createdAt: -1 }).limit(1);
         res.json({ total, approved, pending, rejected, completed, lastPassDate: recent[0]?.createdAt || null });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// ════════════════════════════════════════
+//  CANTEEN PORTAL (COUPONS & SALES)
+// ════════════════════════════════════════
+const { CouponRequest, CouponIssuance, CanteenSale } = require('../models/Canteen');
+
+router.get('/canteen/requests', async (req, res) => {
+    try {
+        const requests = await CouponRequest.find().sort({ requestDate: -1 });
+        res.json(requests);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.post('/canteen/requests', async (req, res) => {
+    try {
+        const newReq = new CouponRequest(req.body);
+        newReq.requestId = `CR${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+        await newReq.save();
+        res.status(201).json(newReq);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+router.put('/canteen/requests/:id/approve', async (req, res) => {
+    try {
+        const request = await CouponRequest.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
+        res.json(request);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.put('/canteen/requests/:id/reject', async (req, res) => {
+    try {
+        const request = await CouponRequest.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
+        res.json(request);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/canteen/issued', async (req, res) => {
+    try {
+        const issued = await CouponIssuance.find().sort({ issueDate: -1 });
+        res.json(issued);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.post('/canteen/issued', async (req, res) => {
+    try {
+        const issuance = new CouponIssuance(req.body);
+        issuance.issuanceId = `CI${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+        await issuance.save();
+        res.status(201).json(issuance);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+router.get('/canteen/sales', async (req, res) => {
+    try {
+        const sales = await CanteenSale.find().sort({ saleDate: -1 });
+        res.json(sales);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.post('/canteen/sales', async (req, res) => {
+    try {
+        const sale = new CanteenSale(req.body);
+        sale.saleId = `S${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+        await sale.save();
+        res.status(201).json(sale);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+router.get('/pdf/project/:id', async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=Project_Report_${project._id}.pdf`);
+        generateProjectPDF(project).pipe(res);
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

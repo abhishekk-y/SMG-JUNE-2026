@@ -407,4 +407,27 @@ function generateLetterPDF(type, user) {
     return doc;
 }
 
-module.exports = { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF };
+// ═══════════════════════════════════════════
+//  PROJECT REPORT PDF
+// ═══════════════════════════════════════════
+function generateProjectPDF(project) {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    smgHeader(doc, 'PROJECT STATUS REPORT', 'SMG/PRJ/REP');
+    let y = doc.y + 10;
+    
+    fieldBox(doc, 50, y, 495, 22, 'Project Name:', project.name); y += 22;
+    fieldBox(doc, 50, y, 250, 22, 'Department:', project.department || 'N/A');
+    fieldBox(doc, 300, y, 245, 22, 'Manager:', project.manager?.name || 'N/A'); y += 22;
+    fieldBox(doc, 50, y, 250, 22, 'Status:', project.status || 'N/A');
+    fieldBox(doc, 300, y, 245, 22, 'Progress:', `${project.progress || 0}%`); y += 22;
+    fieldBox(doc, 50, y, 250, 22, 'Start Date:', project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A');
+    fieldBox(doc, 300, y, 245, 22, 'End Date:', project.endDate ? new Date(project.endDate).toLocaleDateString() : 'N/A'); y += 22;
+    fieldBox(doc, 50, y, 495, 55, 'Description:', project.description || 'N/A', 80); y += 55;
+    
+    doc.y = y + 20;
+    autoGenFooter(doc);
+    doc.end();
+    return doc;
+}
+
+module.exports = { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF, generateProjectPDF };
