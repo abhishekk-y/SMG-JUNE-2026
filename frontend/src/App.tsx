@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppProvider } from './context/AppContextEnhanced';
+import { AppProvider, useApp } from './context/AppContextEnhanced';
 import { Login } from './components/Login';
 import { DashboardPage } from './pages/DashboardPage';
 import { DashboardPageOld } from './pages/DashboardPageOld';
@@ -283,6 +283,36 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout }) => {
       </div>
     </aside>
   );
+};
+
+const INITIAL_DATA = {
+  user: {
+    name: "Rohit Sharma",
+    role: "Senior Technician",
+    empId: "SMG-2024-042",
+    dept: "Assembly",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit&backgroundColor=b6e3f4",
+    email: "rohit.sharma@smg-scooters.com",
+    shift: "General (9:00 - 18:00)",
+    reportingTo: "Priya Sharma",
+    phone: "+91 98765 43210",
+    emergencyContact: "+91 98765 43211",
+    dateOfBirth: "15-Aug-1992",
+    dateOfJoining: "10-Jan-2020",
+    bloodGroup: "O+",
+    address: "Flat 402, Green Valley Apartments, Sector 12, Noida, UP - 201301",
+    education: [
+      { degree: "B.Tech in Mechanical Engineering", institution: "Delhi Technical University", year: "2010-2014", grade: "8.2 CGPA" },
+      { degree: "Senior Secondary (XII)", institution: "DAV Public School", year: "2010", grade: "88%" }
+    ],
+    certifications: [
+      { name: "Six Sigma Green Belt", issuer: "ASQ", year: "2021" },
+      { name: "Industrial Safety", issuer: "NSCI", year: "2020" },
+      { name: "Quality Management", issuer: "ISO", year: "2019" }
+    ],
+    skills: ["Assembly Line Operations", "Quality Control", "Safety Compliance", "Technical Documentation", "Team Leadership"],
+    languages: ["Hindi (Native)", "English (Fluent)", "Punjabi (Conversational)"]
+  }
 };
 
 export default function App() {
