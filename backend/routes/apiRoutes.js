@@ -1492,4 +1492,116 @@ router.get('/pdf/project/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// ════════════════════════════════════════
+//  MISSING GENERIC ROUTES
+// ════════════════════════════════════════
+
+// -- ATTENDANCE MISS SLIP --
+router.get('/miss-slips/:userId', async (req, res) => {
+    try { res.json(await AttendanceMissSlip.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/miss-slips', async (req, res) => {
+    try { res.status(201).json(await AttendanceMissSlip.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.get('/miss-slips-all', async (_req, res) => {
+    try { res.json(await AttendanceMissSlip.find().populate('user', 'name empId dept').sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- TRAVEL --
+router.get('/travel/:userId', async (req, res) => {
+    try { res.json(await TravelRequest.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/travel', async (req, res) => {
+    try { res.status(201).json(await TravelRequest.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/travel/:id', async (req, res) => {
+    try { res.json(await TravelRequest.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- MRF --
+router.get('/mrf', async (_req, res) => {
+    try { res.json(await MRF.find().sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/mrf', async (req, res) => {
+    try { res.status(201).json(await MRF.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/mrf/:id', async (req, res) => {
+    try { res.json(await MRF.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- INTERVIEWS --
+router.get('/interviews', async (_req, res) => {
+    try { res.json(await Interview.find().sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/interviews', async (req, res) => {
+    try { res.status(201).json(await Interview.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/interviews/:id', async (req, res) => {
+    try { res.json(await Interview.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- JOB DESCRIPTIONS --
+router.get('/job-descriptions', async (_req, res) => {
+    try { res.json(await JobDescription.find().sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/job-descriptions', async (req, res) => {
+    try { res.status(201).json(await JobDescription.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- KEY REPRESENTATIVES --
+router.get('/key-reps', async (_req, res) => {
+    try { res.json(await KeyRepresentative.find().sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/key-reps', async (req, res) => {
+    try { res.status(201).json(await KeyRepresentative.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- WELFARE --
+router.get('/welfare', async (_req, res) => {
+    try { res.json(await WelfareProgram.find().sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/welfare', async (req, res) => {
+    try { res.status(201).json(await WelfareProgram.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/welfare/:id/enroll', async (req, res) => {
+    try { res.json(await WelfareProgram.findByIdAndUpdate(req.params.id, { $addToSet: { enrolledUsers: req.body.userId } }, { new: true })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// -- RESIGNATIONS --
+router.get('/resignations/:userId', async (req, res) => {
+    try { res.json(await Resignation.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.get('/resignations-all', async (_req, res) => {
+    try { res.json(await Resignation.find().populate('user', 'name empId dept').sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.post('/resignations', async (req, res) => {
+    try { res.status(201).json(await Resignation.create(req.body)); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/resignations/:id', async (req, res) => {
+    try { res.json(await Resignation.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
+    catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 module.exports = router;

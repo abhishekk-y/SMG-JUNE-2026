@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Coffee,
@@ -52,6 +52,7 @@ import { toast } from 'sonner@2.0.3';
 import logo from 'figma:asset/7ef5cbbf7f7fd6bbcf30128158bd641f40437597.png';
 
 import { generateCanteenOrdersPDF } from '../../utils/pdfExport';
+import { apiFetch } from '../../services/api';
 
 // Get dynamic greeting based on time
 const getGreeting = () => {
@@ -111,7 +112,6 @@ interface MenuItem {
 }
 
 // ============ HOOKS ============
-const API_URL = 'http://localhost:5000/api';
 
 function useDataStore(key: string) {
     const [data, setData] = useState<any[]>([]);
@@ -126,10 +126,8 @@ function useDataStore(key: string) {
             else if (key === 'canteen:sales') endpoint = '/canteen/sales';
 
             if (endpoint) {
-                const res = await fetch(`${API_URL}${endpoint}`);
-                if (res.ok) {
-                    setData(await res.json());
-                }
+                const res = await apiFetch(endpoint);
+                setData(res);
             }
         } catch (err) { console.error('Failed to fetch', key, err); }
         finally { setLoading(false); }
@@ -198,12 +196,10 @@ export function CanteenPortal() {
     const dbId = (request as any)?._id || requestId;
     
     try {
-      const res = await fetch(`${API_URL}/canteen/requests/${dbId}/approve`, { method: 'PUT' });
-      if (res.ok) {
-        toast.success(request?.type === 'guest' ? `Guest coupon request approved for ${request.guestName}` : 'Coupon request approved');
-        requestsApi.refresh();
-      } else toast.error('Failed to approve request');
-    } catch (e) { toast.error('Server error'); }
+      await apiFetch(`/canteen/requests/${dbId}/approve`, { method: 'PUT' });
+      toast.success(request?.type === 'guest' ? `Guest coupon request approved for ${request.guestName}` : 'Coupon request approved');
+      requestsApi.refresh();
+    } catch (e) { toast.error('Server error or failed to approve request'); }
   };
 
   const handleRejectRequest = async (requestId: string) => {
@@ -211,12 +207,10 @@ export function CanteenPortal() {
     const dbId = (request as any)?._id || requestId;
     
     try {
-      const res = await fetch(`${API_URL}/canteen/requests/${dbId}/reject`, { method: 'PUT' });
-      if (res.ok) {
-        toast.error('Coupon request rejected');
-        requestsApi.refresh();
-      } else toast.error('Failed to reject request');
-    } catch (e) { toast.error('Server error'); }
+      await apiFetch(`/canteen/requests/${dbId}/reject`, { method: 'PUT' });
+      toast.error('Coupon request rejected');
+      requestsApi.refresh();
+    } catch (e) { toast.error('Server error or failed to reject request'); }
   };
 
   const handleNewSale = async (formData: any) => {
@@ -231,17 +225,14 @@ export function CanteenPortal() {
     };
     
     try {
-      const res = await fetch(`${API_URL}/canteen/sales`, {
+      await apiFetch('/canteen/sales', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSale)
       });
-      if (res.ok) {
-        toast.success('Coupon sale recorded. Finance department has been notified.');
-        salesApi.refresh();
-        setShowNewSaleDialog(false);
-      } else toast.error('Failed to record sale');
-    } catch (e) { toast.error('Server error'); }
+      toast.success('Coupon sale recorded. Finance department has been notified.');
+      salesApi.refresh();
+      setShowNewSaleDialog(false);
+    } catch (e) { toast.error('Server error or failed to record sale'); }
   };
 
   const handleIssueCoupon = async (formData: any) => {
@@ -257,17 +248,14 @@ export function CanteenPortal() {
     };
     
     try {
-      const res = await fetch(`${API_URL}/canteen/issued`, {
+      await apiFetch('/canteen/issued', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newIssuance)
       });
-      if (res.ok) {
-        toast.success(`Coupons issued to ${formData.employeeName}`);
-        issuedApi.refresh();
-        setShowIssueDialog(false);
-      } else toast.error('Failed to issue coupons');
-    } catch (e) { toast.error('Server error'); }
+      toast.success(`Coupons issued to ${formData.employeeName}`);
+      issuedApi.refresh();
+      setShowIssueDialog(false);
+    } catch (e) { toast.error('Server error or failed to issue coupons'); }
   };
 
   const handleViewDetails = (request: CouponRequest) => {
