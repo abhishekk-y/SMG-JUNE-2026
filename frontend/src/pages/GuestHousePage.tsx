@@ -8,6 +8,7 @@ export const GuestHousePage = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
+  const [searched, setSearched] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState<any>(null);
   const [purpose, setPurpose] = useState('');
 
@@ -115,7 +116,16 @@ export const GuestHousePage = () => {
             </select>
           </div>
           <div className="flex items-end">
-            <button className="w-full bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors">
+            <button 
+              className="w-full bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors"
+              onClick={() => {
+                if (!selectedDates.checkIn || !selectedDates.checkOut) {
+                  alert('Please select check-in and check-out dates');
+                  return;
+                }
+                setSearched(true);
+              }}
+            >
               Search
             </button>
           </div>
@@ -123,7 +133,10 @@ export const GuestHousePage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {guestHouses.map(house => (
+        {guestHouses.filter(house => {
+          if (!searched) return true;
+          return house.available && house.capacity >= guests;
+        }).map(house => (        
           <div key={house.id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
