@@ -113,7 +113,13 @@ export const SIMAllocationPage = () => {
     if (!userId) return alert('Please log in');
     setIsSubmitting(true);
     try {
-      await requestSIM({ user: userId, plan: planName, status: 'Pending', reason: 'Official Use' });
+      await requestSIM({
+        user: userId,
+        requestId: `SIM-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+        planType: planName,   // ← was 'plan', model expects 'planType'
+        status: 'Pending',
+        purpose: 'Official Use'
+      });
       alert('SIM requested successfully!');
       fetchRequests();
     } catch (err: any) {
@@ -194,7 +200,14 @@ export const AssetRequestsPage = () => {
     if (!reason.trim()) return alert('Justification is required');
     setIsSubmitting(true);
     try {
-      await requestAsset({ user: userId, assetType, priority, reason, status: 'Pending' });
+     await requestAsset({
+      user: userId,
+      requestId: `AR-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+      assetType,
+      priority,
+      justification: reason,   // ← was 'reason', model expects 'justification'
+      status: 'Pending'
+    });
       alert('Asset requested successfully!');
       setReason('');
       fetchRequests();
