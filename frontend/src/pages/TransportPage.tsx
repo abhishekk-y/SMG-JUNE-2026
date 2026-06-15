@@ -31,11 +31,14 @@ export const TransportPage = () => {
     try {
       const requestData = {
         user: userId,
-        route: route.name,
-        timing: route.timing,
-        type: 'Daily Commute',
+        requestId: `TR-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+        type: 'Pick-up',
+        from: route.location || 'Office',
+        to: route.name,
+        date: new Date().toISOString(),
+        time: route.timing?.split(' - ')[0] || '08:00',
+        purpose: `Daily commute - ${route.name}`,
         status: 'Pending',
-        date: new Date().toISOString()
       };
       const newRequest = await requestTransport(requestData);
       setTransportRequests([newRequest, ...transportRequests]);
