@@ -4,8 +4,32 @@ const notificationSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true },
     message: { type: String, required: true },
-    type: { type: String, enum: ['success', 'info', 'warning', 'error'], default: 'info' },
-    category: { type: String, enum: ['Leave', 'Training', 'Payroll', 'System', 'Announcement', 'Request', 'Other', 'Gate Pass'], default: 'Other' },
+    type: {
+        type: String,
+        enum: ['success', 'info', 'warning', 'error'],
+        default: 'info'
+    },
+    category: {
+        type: String,
+        enum: [
+            'Leave',
+            'Training',
+            'Payroll',
+            'System',
+            'Announcement',
+            'Request',
+            'Uniform',
+            'SIM',
+            'Assets',
+            'Transport',
+            'Gate Pass',
+            'Guest House',
+            'Finance',
+            'Canteen',
+            'Other'
+        ],
+        default: 'Other'
+    },
     isRead: { type: Boolean, default: false },
     link: { type: String }
 }, { timestamps: true });
