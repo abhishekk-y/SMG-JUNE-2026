@@ -647,8 +647,32 @@ router.get('/uniforms/:userId', async (req, res) => {
     catch (err) { res.status(500).json({ message: err.message }); }
 });
 router.post('/uniforms', async (req, res) => {
-    try { res.status(201).json(await UniformRequest.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
+    console.log("========== UNIFORM REQUEST ==========");
+    console.log(req.body);
+    try {
+        const body = { ...req.body };
+        // Auto-generate requestId (required field was never being set)
+        if (!body.requestId) {
+            const count = await UniformRequest.countDocuments();
+            body.requestId = `UR-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+        }
+        // Convert legacy itemType string → items array that schema expects
+        if (!body.items || body.items.length === 0) {
+            const itemName = body.itemType || 'General Uniform';
+            body.items = [{ name: itemName, size: body.size || 'M', quantity: body.quantity || 1 }];
+            delete body.itemType;
+        }
+        const created = await UniformRequest.create(body);
+        await Notification.create({
+            user: created.user,
+            title: 'Uniform Request Submitted',
+            message: `Your uniform request (${created.requestId}) has been submitted.`,
+            type: 'info',
+            category: 'Uniform'
+        });
+        res.status(201).json(created);
+    }
+    catch (err) { res.status(400).json({ message: err.message }); }
 });
 router.put('/uniforms/:id', async (req, res) => {
     try {
