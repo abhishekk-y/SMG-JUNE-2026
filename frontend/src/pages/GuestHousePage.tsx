@@ -41,17 +41,24 @@ export const GuestHousePage = () => {
 
     setIsBooking(true);
     try {
-      const bookingData = {
-        user: userId,
-        roomType: showBookingModal.name,
-        location: showBookingModal.location,
-        checkInDate: selectedDates.checkIn,
-        checkOutDate: selectedDates.checkOut,
-        guests: guests,
-        purpose: purpose,
-        pricePerNight: showBookingModal.price,
-        status: 'Pending',
-      };
+      const roomTypeMap: Record<string, string> = {
+       'Executive Suite': 'Suite',
+       'Standard Room': 'Single',
+       'Deluxe Room': 'Double',
+       'Dormitory': 'Dormitory',
+     };
+
+     const bookingData = {
+       user: userId,
+       bookingId: `GH-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+       guestName: localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest',
+       roomType: roomTypeMap[showBookingModal.name] || 'Single',
+       checkInDate: selectedDates.checkIn,
+       checkOutDate: selectedDates.checkOut,
+       numberOfGuests: guests,
+       purpose: purpose,
+       status: 'Pending',
+     };
       
       const newBooking = await bookGuestHouse(bookingData);
       setBookings([newBooking, ...bookings]);
