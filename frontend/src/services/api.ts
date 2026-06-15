@@ -13,7 +13,7 @@ function getToken(): string | null {
 }
 
 // Generic fetch helper with auth token
-async function apiFetch(endpoint: string, options?: RequestInit) {
+export async function apiFetch(endpoint: string, options?: RequestInit) {
     const token = getToken();
     const headers: Record<string, string> = {};
     
