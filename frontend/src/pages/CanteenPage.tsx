@@ -63,13 +63,20 @@ export const CanteenPage = () => {
     if (cart.length === 0 || !userId) return;
     setIsPlacingOrder(true);
     try {
+      const hour = new Date().getHours();
+      const mealType =
+        hour < 11 ? 'Breakfast' :
+        hour < 15 ? 'Lunch' :
+        hour < 18 ? 'Snacks' : 'Dinner';
+
       const orderData = {
         user: userId,
         items: cart.map(c => ({ name: c.name, quantity: c.quantity, price: c.price })),
         totalAmount: Math.round(totalAmount * 1.05),
+        mealType,
         status: 'Preparing',
         date: new Date().toISOString()
-      };
+};
       const newOrder = await placeCanteenOrder(orderData);
       setOrders([newOrder, ...orders]);
       setCart([]);
