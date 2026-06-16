@@ -26,7 +26,7 @@ const THEME = {
   }
 };
 
-export const DashboardPage = ({ userData }) => {
+export const DashboardPage = ({ userData, onNavigate }) => {
   const { leaveBalance, requests, trainings, attendanceHistory, notifications } = useApp();
 
   const presentDays = attendanceHistory?.filter(a => a.status === 'Present').length || 0;
@@ -34,10 +34,10 @@ export const DashboardPage = ({ userData }) => {
   const attendanceRate = Math.round((presentDays / totalDays) * 100);
 
   const stats = [
-    { label: 'Leave Balance', value: `${leaveBalance?.casual?.remaining || 0} Days`, icon: Calendar, color: THEME.colors.royal, trend: 'Active' },
-    { label: 'Pending Requests', value: `${requests?.filter(r => r.status === 'Pending').length || 0}`, icon: FileText, color: THEME.colors.warning, trend: 'Review' },
-    { label: 'Trainings', value: `${trainings?.length || 0} Active`, icon: Award, color: THEME.colors.success, trend: 'Growth' },
-    { label: 'Attendance', value: `${attendanceRate}%`, icon: CheckCircle, color: THEME.colors.accent, trend: 'Good' }
+    { label: 'Leave Balance', value: `${leaveBalance?.casual?.remaining || 0} Days`, icon: Calendar, bgClass: 'bg-gradient-to-br from-[#0B4DA2] to-[#042A5B]', trend: 'Active' },
+    { label: 'Pending Requests', value: `${requests?.filter(r => r.status === 'Pending').length || 0}`, icon: FileText, bgClass: 'bg-gradient-to-br from-[#FFB547] to-[#e09e30]', trend: 'Review' },
+    { label: 'Trainings', value: `${trainings?.length || 0} Active`, icon: Award, bgClass: 'bg-gradient-to-br from-[#05CD99] to-[#04b589]', trend: 'Growth' },
+    { label: 'Attendance', value: `${attendanceRate}%`, icon: CheckCircle, bgClass: 'bg-gradient-to-br from-[#87CEEB] to-[#68b8d8]', trend: 'Good' }
   ];
 
   const recentActivity = notifications?.slice(0, 4).map(n => ({
@@ -79,7 +79,7 @@ export const DashboardPage = ({ userData }) => {
         {stats.map((stat, idx) => (
           <div key={idx} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
             <div className="flex items-start justify-between mb-4">
-              <div className={`p-3 rounded-xl bg-gradient-to-br from-[${stat.color}] to-[${stat.color}]/80`}>
+              <div className={`p-3 rounded-xl ${stat.bgClass}`}>
                 <stat.icon className="text-white" size={24} />
               </div>
               <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
@@ -153,19 +153,19 @@ export const DashboardPage = ({ userData }) => {
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-[#1B254B] mb-6">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="p-6 rounded-xl bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] text-white hover:shadow-xl transition-all text-center">
+          <button onClick={() => onNavigate('leaves')} className="p-6 rounded-xl bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] text-white hover:shadow-xl transition-all text-center">
             <Calendar className="mx-auto mb-3" size={28} />
             <p className="font-bold text-sm">Apply Leave</p>
           </button>
-          <button className="p-6 rounded-xl bg-gradient-to-br from-[#05CD99] to-[#05CD99]/80 text-white hover:shadow-xl transition-all text-center">
+          <button onClick={() => onNavigate('payroll')} className="p-6 rounded-xl bg-gradient-to-br from-[#05CD99] to-[#04b589] text-white hover:shadow-xl transition-all text-center">
             <FileText className="mx-auto mb-3" size={28} />
             <p className="font-bold text-sm">View Payslip</p>
           </button>
-          <button className="p-6 rounded-xl bg-gradient-to-br from-[#FFB547] to-[#FFB547]/80 text-white hover:shadow-xl transition-all text-center">
+          <button onClick={() => onNavigate('training')} className="p-6 rounded-xl bg-gradient-to-br from-[#FFB547] to-[#e09e30] text-white hover:shadow-xl transition-all text-center">
             <Award className="mx-auto mb-3" size={28} />
             <p className="font-bold text-sm">My Training</p>
           </button>
-          <button className="p-6 rounded-xl bg-gradient-to-br from-[#87CEEB] to-[#87CEEB]/80 text-white hover:shadow-xl transition-all text-center">
+          <button onClick={() => onNavigate('attendance')} className="p-6 rounded-xl bg-gradient-to-br from-[#87CEEB] to-[#68b8d8] text-white hover:shadow-xl transition-all text-center">
             <Users className="mx-auto mb-3" size={28} />
             <p className="font-bold text-sm">Team Directory</p>
           </button>
