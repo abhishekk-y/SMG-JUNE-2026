@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
-// BUG-008 FIX: replaced raw fetch() with apiFetch() from api.ts so JWT token is sent
-import { apiFetch } from '../services/api';
+import { apiFetch, downloadPDF } from '../services/api';
 
 export const LeavesPage = () => {
   const [showNewLeaveForm, setShowNewLeaveForm] = useState(false);
@@ -58,10 +57,7 @@ export const LeavesPage = () => {
   ];
 
   const handleDownload = (id: string) => {
-    // PDF download uses the token from localStorage via window.open (no fetch auth needed for inline PDF)
-    const token = JSON.parse(localStorage.getItem('employee_user') || '{}')?.token;
-    const url = `http://localhost:5000/api/pdf/leave/${id}`;
-    window.open(url, '_blank');
+    downloadPDF('leave', id);
   };
 
   const getStatusIcon = (status: string) => {
