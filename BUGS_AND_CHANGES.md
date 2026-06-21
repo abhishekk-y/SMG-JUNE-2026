@@ -351,6 +351,32 @@ Each bug is fixed individually with a dedicated git commit.
 
 ---
 
+### BUG-033 — Employee Sidebar Routing Crash (react-router-dom mismatch)
+**Files:** `frontend/src/components/Sidebar.tsx`
+**Root Cause:** A previous integration accidentally modified `Sidebar.tsx` to use `<NavLink>` from `react-router-dom`. Since the application utilizes a state-based Single Page Architecture without a `<BrowserRouter>`, clicking any sidebar link crashed the entire employee portal with a hook error.
+**Fix:** Rewrote the sidebar navigation to use standard `<button>` elements driven by the `onNavigate` prop, aligning it with the robust structure used in the `SuperAdminSidebar`.
+**Commit:** `fix(Routing): refactor Sidebar to use activePage prop instead of react-router NavLink to prevent crashes, and remove Edit Profile option from ProfilePage`
+**Status:** FIXED
+
+---
+
+### BUG-034 — Service Catalog Route Missing in App.tsx
+**Files:** `frontend/src/App.tsx`, `frontend/src/components/Sidebar.tsx`
+**Root Cause:** The `service-catalog` identifier was correctly emitting from the Sidebar but completely missing from the `switch` statement inside `App.tsx`'s `renderContent` block, rendering the module unreachable.
+**Fix:** Added the `service-catalog` case and mapped it properly to `<DepartmentPortalHub onNavigate={setActivePage} />`.
+**Commit:** `fix(Routing): refactor Sidebar to use activePage prop instead of react-router NavLink to prevent crashes, and remove Edit Profile option from ProfilePage`
+**Status:** FIXED
+
+---
+
+### ADD-ON-007 — Disable Edit Profile Option for Employees
+**Files:** `frontend/src/pages/ProfilePage.tsx`
+**Details:** To prevent unwanted self-service modifications to official records, the "Edit Profile" toggle button was removed entirely from the Employee Profile UI. Employees can now only view their static profile fields.
+**Commit:** `fix(Routing): refactor Sidebar to use activePage prop instead of react-router NavLink to prevent crashes, and remove Edit Profile option from ProfilePage`
+**Status:** IMPLEMENTED
+
+---
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
