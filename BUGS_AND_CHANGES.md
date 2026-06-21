@@ -385,6 +385,22 @@ Each bug is fixed individually with a dedicated git commit.
 
 ---
 
+### ADD-ON-009 — Premium Uniform Requests Page (Full Backend Integration)
+**Files:** `frontend/src/pages/UniformPage.tsx` (new file), `frontend/src/App.tsx`
+**Details:** Replaced the basic placeholder Uniform page with a fully-featured, production-ready module. Built as a standalone `UniformPage.tsx` component (decoupled from `OtherPages.tsx`). Features include: a 6-item visual uniform catalogue (Work Shirt, Safety Trousers, Safety Jacket, Safety Boots, Work Gloves, Safety Helmet), a 2-step modal request flow with size selector (XS–XXL) and quantity picker (1–5), real-time status tracking cards with progress bars, filter tabs per status, and a stats banner in the header. Fully connected to the `/uniforms` MongoDB backend endpoints via `getUniformRequests` and `requestUniform` from `api.ts`.
+**Commit:** `feat(Uniform): build premium fully-functional Uniform Requests page with catalogue, size selector, quantity picker, status tracking, and MongoDB backend integration`
+**Status:** IMPLEMENTED
+
+---
+
+### ADD-ON-010 — Uniform Page Polish: Professional Icons, Instructions & Cancel Feature
+**Files:** `frontend/src/pages/UniformPage.tsx`, `frontend/src/services/api.ts`
+**Details:** Replaced all emoji icons with professional Lucide SVG icons (`Shirt`, `Shield`, `HardHat`, `Footprints`, `Hand`, `Layers`) throughout the catalogue and request cards. Added a numbered Instructions section explaining the full request lifecycle. Added a **Cancel Request** button that appears only on `Pending` requests — triggers a confirmation dialog and calls a new `cancelUniformRequest` API helper (PUT to `/uniforms/:id`) to update status in MongoDB.
+**Commit:** `feat(Uniform): replace emojis with professional Lucide icons, add instructions section, and add cancel button for pending requests`
+**Status:** IMPLEMENTED
+
+---
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
