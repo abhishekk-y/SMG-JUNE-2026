@@ -377,6 +377,14 @@ Each bug is fixed individually with a dedicated git commit.
 
 ---
 
+### ADD-ON-008 — Native Hash-Based Routing & Deep Linking
+**Files:** `frontend/src/App.tsx`
+**Details:** Solved the primary drawbacks of the Single Page Architecture (lack of back/forward navigation, lack of refresh persistence, and inability to share direct links) without introducing heavy libraries like `react-router-dom`. Implemented a lightweight hook in `App.tsx` that synchronizes the `activePage` state directly with `window.location.hash`, enabling deep-linking (`#payroll`) and full browser history support while maintaining the instantaneous, reload-free native app performance.
+**Commit:** `feat(Routing): implement hash-based synchronization for activePage to support direct links, refresh persistence, and browser history`
+**Status:** IMPLEMENTED
+
+---
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
