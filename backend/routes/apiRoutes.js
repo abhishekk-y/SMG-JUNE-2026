@@ -34,7 +34,7 @@ const JobDescription = require('../models/JobDescription');
 const KeyRepresentative = require('../models/KeyRepresentative');
 const WelfareProgram = require('../models/WelfareProgram');
 const DepartmentData = require('../models/DepartmentData');
-const { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF, generateProjectPDF } = require('../utils/pdfGenerator');
+const { generatePayslipPDF, generateGatePassPDF, generateLeavePDF, generateLetterPDF, generateMissSlipPDF, generateTravelPDF, generateProjectPDF, generateReportPDF } = require('../utils/pdfGenerator');
 const { sendEmail } = require('../utils/emailSender');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -1521,6 +1521,21 @@ router.get('/pdf/project/:id', async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=Project_Report_${project._id}.pdf`);
         generateProjectPDF(project).pipe(res);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/pdf/report/:reportId', async (req, res) => {
+    try {
+        const reportId = req.params.reportId;
+        const titles = {
+            'R-ATT-DEC': 'Attendance Report (Dec 2025)',
+            'R-REQ-YTD': 'Requests Year-To-Date',
+            'R-TRN-Q4': 'Training Effectiveness Q4'
+        };
+        const title = titles[reportId] || 'System Summary Report';
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=Report_${reportId}.pdf`);
+        generateReportPDF(reportId, title).pipe(res);
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

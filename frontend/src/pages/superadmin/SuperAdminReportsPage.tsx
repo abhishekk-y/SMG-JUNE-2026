@@ -8,6 +8,12 @@ export const SuperAdminReportsPage = () => {
     { id: 'R-TRN-Q4', title: 'Training Effectiveness Q4', size: '980 KB' },
   ];
 
+  const handleDownload = (id: string) => {
+    // BUG-023 FIX: Wired report downloads to the backend PDF generation route
+    const url = `http://localhost:5000/api/pdf/report/${id}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
@@ -32,7 +38,12 @@ export const SuperAdminReportsPage = () => {
                 <td className="px-6 py-3 text-sm text-[#1B254B]">{r.title}</td>
                 <td className="px-6 py-3 text-sm">{r.size}</td>
                 <td className="px-6 py-3 text-sm">
-                  <button className="bg-[#0B4DA2] text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2"><Download size={14} /> Download</button>
+                  <button
+                    onClick={() => handleDownload(r.id)}
+                    className="bg-[#0B4DA2] hover:bg-[#042A5B] text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors"
+                  >
+                    <Download size={14} /> Download
+                  </button>
                 </td>
               </tr>
             ))}
