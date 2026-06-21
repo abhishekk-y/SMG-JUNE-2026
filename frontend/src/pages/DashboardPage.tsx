@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   Calendar, 
@@ -20,7 +20,8 @@ import {
   Monitor,
   Keyboard,
   Mouse,
-  Smartphone
+  Smartphone,
+  X
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContextEnhanced';
@@ -45,6 +46,18 @@ const getGreeting = () => {
 
 export const DashboardPage = ({ userData, onNavigate }) => {
   const { leaveBalance, requests, trainings, attendanceHistory, notifications } = useApp();
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [modalType, setModalType] = useState(null);
+
+  const handleOpenModal = (type, item) => {
+    setModalType(type);
+    setSelectedItem(item);
+  };
+  
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setModalType(null);
+  };
 
   const presentDays = attendanceHistory?.filter(a => a.status === 'Present').length || 0;
   const totalDays = attendanceHistory?.length || 1;
@@ -185,7 +198,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
           </div>
           <div className="space-y-4 flex-1">
             {recentActivity.map((activity) => (
-              <div key={activity.id} onClick={() => alert(`Viewing notification details:\n\n${activity.type}\n${activity.desc}`)} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group hover:shadow-sm">
+              <div key={activity.id} onClick={() => handleOpenModal('notification', activity)} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group hover:shadow-sm">
                 <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
                   activity.status === 'success' ? 'bg-[#05CD99]' :
                   activity.status === 'warning' ? 'bg-[#FFB547]' :
@@ -211,7 +224,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
           </div>
           <div className="space-y-4 flex-1">
             {upcomingEvents.map((event) => (
-              <div key={event.id} onClick={() => alert(`Opening training details for: ${event.title}`)} className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-50 bg-white hover:border-[#0B4DA2] hover:shadow-md transition-all cursor-pointer group">
+              <div key={event.id} onClick={() => handleOpenModal('training', event)} className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-50 bg-white hover:border-[#0B4DA2] hover:shadow-md transition-all cursor-pointer group">
                 <div className="w-14 h-14 bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] rounded-xl flex flex-col items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-inner">
                   <span className="text-xs font-bold">{event.date.split(' ')[1]}</span>
                   <span className="text-[10px] text-[#87CEEB] font-medium tracking-wide uppercase">{event.date.split(' ')[0]}</span>
@@ -240,7 +253,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
           </div>
           <div className="space-y-5 flex-1">
             {activeProjects.map((project) => (
-              <div key={project.id} onClick={() => alert(`Opening project workspace for: ${project.name}`)} className="group cursor-pointer p-4 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+              <div key={project.id} onClick={() => handleOpenModal('project', project)} className="group cursor-pointer p-4 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
                 <div className="flex justify-between items-center mb-2">
                   <div>
                     <h4 className="text-sm font-bold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors">{project.name}</h4>
@@ -268,7 +281,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
             {myAssets.map((asset, idx) => {
               const AssetIcon = asset.icon;
               return (
-                <div key={idx} onClick={() => alert(`Opening asset details for: ${asset.name}`)} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 cursor-pointer group">
+                <div key={idx} onClick={() => handleOpenModal('asset', asset)} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 cursor-pointer group">
                   <div className="flex items-center gap-4">
                     <div className="bg-white shadow-sm p-2.5 rounded-xl text-[#0B4DA2] border border-gray-100">
                       <AssetIcon size={20} />
@@ -291,6 +304,75 @@ export const DashboardPage = ({ userData, onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Details Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#1B254B]/60 backdrop-blur-sm" onClick={handleCloseModal}></div>
+          <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-lg relative z-10 animate-in fade-in zoom-in-95 duration-200 shadow-2xl border border-gray-100">
+            <button onClick={handleCloseModal} className="absolute top-4 right-4 p-2 bg-gray-50 text-gray-400 hover:text-[#EE5D50] hover:bg-red-50 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-[#0B4DA2] mb-4">
+                {modalType === 'notification' && <Activity size={32} />}
+                {modalType === 'training' && <Award size={32} />}
+                {modalType === 'project' && <Briefcase size={32} />}
+                {modalType === 'asset' && <Monitor size={32} />}
+              </div>
+              <h2 className="text-2xl font-bold text-[#1B254B] mb-2">
+                {selectedItem.title || selectedItem.name || selectedItem.type}
+              </h2>
+              {modalType === 'project' && <span className="inline-block bg-blue-50 text-[#0B4DA2] px-3 py-1 rounded-lg text-xs font-bold mb-4">{selectedItem.role}</span>}
+              {modalType === 'asset' && <span className="inline-block bg-green-50 text-green-700 px-3 py-1 rounded-lg text-xs font-bold mb-4">{selectedItem.status} Condition</span>}
+              
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm text-gray-600 mb-6">
+                {modalType === 'notification' && <p>{selectedItem.desc}</p>}
+                {modalType === 'training' && (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2"><Calendar size={16} className="text-[#87CEEB]"/> <strong>Date:</strong> {selectedItem.date}</p>
+                    <p className="flex items-center gap-2"><Clock size={16} className="text-[#87CEEB]"/> <strong>Duration:</strong> {selectedItem.time}</p>
+                    <p className="flex items-center gap-2"><Award size={16} className="text-[#87CEEB]"/> <strong>Type:</strong> {selectedItem.type}</p>
+                  </div>
+                )}
+                {modalType === 'project' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-[#1B254B]">Progress</span>
+                      <span className="font-bold text-[#0B4DA2]">{selectedItem.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#0B4DA2] rounded-full" style={{width: `${selectedItem.progress}%`}}></div>
+                    </div>
+                  </div>
+                )}
+                {modalType === 'asset' && (
+                  <div className="space-y-2">
+                    <p><strong>Type:</strong> {selectedItem.type}</p>
+                    <p><strong>Assigned:</strong> Yes</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button onClick={() => {
+                handleCloseModal();
+                if (modalType === 'notification') onNavigate('notifications');
+                if (modalType === 'training') onNavigate('training');
+                if (modalType === 'project') onNavigate('projects');
+                if (modalType === 'asset') onNavigate('asset-requests');
+              }} className="flex-1 bg-[#0B4DA2] hover:bg-[#042A5B] text-white py-3 rounded-xl font-bold transition-colors shadow-md shadow-blue-900/20">
+                Go to Dashboard
+              </button>
+              <button onClick={handleCloseModal} className="flex-1 bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 py-3 rounded-xl font-bold transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
