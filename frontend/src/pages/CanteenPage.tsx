@@ -8,8 +8,6 @@ export const CanteenPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-
-  const API = 'http://localhost:5000/api';
   const userId = localStorage.getItem('userId');
 
   // Fallback menu if DB has no menu items yet
