@@ -289,6 +289,12 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `fix(BUG-031): restore legacy 8 quick actions to employee DashboardPage`
 **Status:** FIXED
 
+### ADD-ON-001 — Dashboard UI/UX Revamp & Functional Ticker
+**File:** `frontend/src/pages/DashboardPage.tsx`
+**Details:** Redesigned the Dashboard Welcome banner to include decorative background elements for a more premium look. Added a functional "Priority Action Ticker" to alert users of pending items directly under the header. Compacted the Quick Actions grid with refined padding and typography to stretch cleanly across wide screens while remaining visually tight.
+**Commit:** `feat(ADD-ON-001): revamp Dashboard UI with Priority Ticker and refined Quick Actions`
+**Status:** IMPLEMENTED
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
