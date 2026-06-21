@@ -138,12 +138,30 @@ export const AppProvider = ({ children }) => {
         fetchSafe(`/notifications/${userId}`),
         fetchSafe(`/departments`)
       ]);
-      if (att) setAttendanceHistory(att.map((a: any, i: number) => ({
-        id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
-        checkIn: a.checkIn || '-', checkOut: a.checkOut || '-', hours: a.duration || '-', status: a.status,
-        break: a.segments?.find((s:any) => s.type === 'break') ? '30m' : '-',
-        overtime: a.overtimeHours ? `${a.overtimeHours}h` : '-'
-      })));
+      if (att) {
+        setAttendanceHistory(att.map((a: any, i: number) => ({
+          id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
+          checkIn: a.checkIn || '-', checkOut: a.checkOut || '-', hours: a.duration || '-', status: a.status,
+          break: a.segments?.find((s:any) => s.type === 'break') ? '30m' : '-',
+          overtime: a.overtimeHours ? `${a.overtimeHours}h` : '-'
+        })));
+        
+        // Find today's active clock-in if any (where checkOut is missing or '-')
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const activeRecord = att.find((a: any) => {
+          const aDateStr = a.date ? new Date(a.date).toLocaleDateString('en-CA') : '';
+          return aDateStr === todayStr && (!a.checkOut || a.checkOut === '-');
+        });
+        if (activeRecord) {
+          setIsClockedIn(true);
+          setClockInTime(activeRecord.checkIn);
+          setTodayAttendanceId(activeRecord._id);
+        } else {
+          setIsClockedIn(false);
+          setClockInTime(null);
+          setTodayAttendanceId(null);
+        }
+      }
       if (lv) setLeaveRequests(lv.map((l: any) => ({
         id: l._id, type: l.type, startDate: l.from?.split('T')[0], endDate: l.to?.split('T')[0], days: l.days, reason: l.reason, status: l.status, appliedDate: l.createdAt?.split('T')[0]
       })));
@@ -183,6 +201,7 @@ export const AppProvider = ({ children }) => {
   const [clockInTime, setClockInTime] = useState<string | null>(null);
   const [clockOutTime, setClockOutTime] = useState<string | null>(null);
   const [todayHours, setTodayHours] = useState('0h 0m');
+  const [todayAttendanceId, setTodayAttendanceId] = useState<string | null>(null);
   const [attendanceHistory, setAttendanceHistory] = useState([
     { id: 1, date: '2024-12-11', day: 'Wednesday', checkIn: '09:00 AM', checkOut: '06:15 PM', hours: '9h 15m', status: 'Present' },
     { id: 2, date: '2024-12-10', day: 'Tuesday', checkIn: '08:55 AM', checkOut: '06:00 PM', hours: '9h 5m', status: 'Present' },
@@ -460,24 +479,64 @@ export const AppProvider = ({ children }) => {
   ]);
   
   // Clock In/Out Handlers
-  const handleClockIn = () => {
+  const handleClockIn = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
     const currentTime = new Date().toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true 
     });
-    setClockInTime(currentTime);
-    setIsClockedIn(true);
-    
-    addNotification({
-      title: 'Clocked In Successfully',
-      message: `You clocked in at ${currentTime}`,
-      type: 'success',
-      time: 'Just now'
-    });
+
+    const today = new Date();
+    const newRecord = {
+      user: userId,
+      date: today.toISOString(),
+      day: today.toLocaleDateString('en-US', { weekday: 'long' }),
+      checkIn: currentTime,
+      checkOut: '-',
+      duration: '-',
+      status: 'Present',
+      segments: [{ type: 'work', width: '100%', color: 'bg-[#0B4DA2]' }]
+    };
+
+    try {
+      const savedRecord = await api.createAttendance(newRecord);
+      setTodayAttendanceId(savedRecord._id);
+      setClockInTime(currentTime);
+      setIsClockedIn(true);
+      
+      // Reload history to reflect the new record immediately
+      const updatedAtt = await api.apiFetch(`/attendance/${userId}`);
+      if (updatedAtt) {
+        setAttendanceHistory(updatedAtt.map((a: any, i: number) => ({
+          id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
+          checkIn: a.checkIn || '-', checkOut: a.checkOut || '-', hours: a.duration || '-', status: a.status,
+          break: a.segments?.find((s:any) => s.type === 'break') ? '30m' : '-',
+          overtime: a.overtimeHours ? `${a.overtimeHours}h` : '-'
+        })));
+      }
+
+      addNotification({
+        title: 'Clocked In Successfully',
+        message: `You clocked in at ${currentTime}`,
+        type: 'success',
+        time: 'Just now'
+      });
+    } catch (err: any) {
+      console.error("Clock-in error:", err);
+      alert('Failed to clock in');
+    }
   };
   
-  const handleClockOut = () => {
+  const handleClockOut = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !todayAttendanceId) {
+      alert('No active clock-in session found to clock out.');
+      return;
+    }
+
     const currentTime = new Date().toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
@@ -498,32 +557,45 @@ export const AppProvider = ({ children }) => {
       const minutes = diffMinutes % 60;
       const hoursWorked = `${hours}h ${minutes}m`;
       setTodayHours(hoursWorked);
-      
-      const today = new Date();
-      const newAttendance = {
-        id: attendanceHistory.length + 1,
-        date: today.toISOString().split('T')[0],
-        day: today.toLocaleDateString('en-US', { weekday: 'long' }),
-        checkIn: clockInTime,
+
+      const updateData = {
         checkOut: currentTime,
-        hours: hoursWorked,
-        status: 'Present'
+        duration: hoursWorked,
+        segments: [
+          { type: 'work', width: '60%', color: 'bg-[#0B4DA2]' },
+          { type: 'break', width: '20%', color: 'bg-[#05CD99]' },
+          { type: 'overtime', width: '20%', color: 'bg-[#FFB547]' }
+        ]
       };
-      setAttendanceHistory([newAttendance, ...attendanceHistory]);
-      
-      addNotification({
-        title: 'Clocked Out Successfully',
-        message: `You clocked out at ${currentTime}. Total hours: ${hoursWorked}`,
-        type: 'success',
-        time: 'Just now'
-      });
+
+      try {
+        await api.updateAttendance(todayAttendanceId, updateData);
+        setIsClockedIn(false);
+        setClockInTime(null);
+        setTodayAttendanceId(null);
+
+        // Reload history
+        const updatedAtt = await api.apiFetch(`/attendance/${userId}`);
+        if (updatedAtt) {
+          setAttendanceHistory(updatedAtt.map((a: any, i: number) => ({
+            id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
+            checkIn: a.checkIn || '-', checkOut: a.checkOut || '-', hours: a.duration || '-', status: a.status,
+            break: a.segments?.find((s:any) => s.type === 'break') ? '30m' : '-',
+            overtime: a.overtimeHours ? `${a.overtimeHours}h` : '-'
+          })));
+        }
+
+        addNotification({
+          title: 'Clocked Out Successfully',
+          message: `You clocked out at ${currentTime}. Total hours: ${hoursWorked}`,
+          type: 'success',
+          time: 'Just now'
+        });
+      } catch (err: any) {
+        console.error("Clock-out error:", err);
+        alert('Failed to clock out');
+      }
     }
-    
-    setIsClockedIn(false);
-    setTimeout(() => {
-      setClockInTime(null);
-      setClockOutTime(null);
-    }, 3000);
   };
   
   // Leave Management Handlers

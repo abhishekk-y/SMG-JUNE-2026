@@ -360,6 +360,12 @@ router.post('/attendance', async (req, res) => {
     try { res.status(201).json(await Attendance.create(req.body)); }
     catch (err) { res.status(500).json({ message: err.message }); }
 });
+router.put('/attendance/:id', async (req, res) => {
+    try {
+        const att = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(att);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
 router.get('/attendance-all', async (_req, res) => {
     try { res.json(await Attendance.find().populate('user', 'name empId dept').sort({ date: -1 }).limit(200)); }
     catch (err) { res.status(500).json({ message: err.message }); }

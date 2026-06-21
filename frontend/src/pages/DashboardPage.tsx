@@ -10,7 +10,13 @@ import {
   Users,
   IndianRupee,
   Activity,
-  ArrowRight
+  ArrowRight,
+  LogOut,
+  Briefcase,
+  Truck,
+  Mail,
+  LifeBuoy,
+  Heart
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContextEnhanced';
@@ -151,24 +157,29 @@ export const DashboardPage = ({ userData, onNavigate }) => {
 
       {/* Quick Actions */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-        <h3 className="text-[#1B254B] mb-6">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button onClick={() => onNavigate('leaves')} className="p-6 rounded-xl bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] text-white hover:shadow-xl transition-all text-center">
-            <Calendar className="mx-auto mb-3" size={28} />
-            <p className="font-bold text-sm">Apply Leave</p>
-          </button>
-          <button onClick={() => onNavigate('payroll')} className="p-6 rounded-xl bg-gradient-to-br from-[#05CD99] to-[#04b589] text-white hover:shadow-xl transition-all text-center">
-            <FileText className="mx-auto mb-3" size={28} />
-            <p className="font-bold text-sm">View Payslip</p>
-          </button>
-          <button onClick={() => onNavigate('training')} className="p-6 rounded-xl bg-gradient-to-br from-[#FFB547] to-[#e09e30] text-white hover:shadow-xl transition-all text-center">
-            <Award className="mx-auto mb-3" size={28} />
-            <p className="font-bold text-sm">My Training</p>
-          </button>
-          <button onClick={() => onNavigate('attendance')} className="p-6 rounded-xl bg-gradient-to-br from-[#87CEEB] to-[#68b8d8] text-white hover:shadow-xl transition-all text-center">
-            <Users className="mx-auto mb-3" size={28} />
-            <p className="font-bold text-sm">Team Directory</p>
-          </button>
+        <h3 className="text-[#1B254B] mb-6 font-bold text-lg">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+          {[
+            { label: "Leave", icon: Calendar, action: 'leaves', color: 'text-[#0B4DA2]' },
+            { label: "Gate Pass", icon: LogOut, action: 'gate-pass', color: 'text-[#EE5D50]' },
+            { label: "Payroll", icon: IndianRupee, action: 'payroll', color: 'text-[#05CD99]' },
+            { label: "Projects", icon: Briefcase, action: 'projects', color: 'text-[#FFB547]' },
+            { label: "Transport", icon: Truck, action: 'transport', color: 'text-[#0B4DA2]' },
+            { label: "Mail", icon: Mail, action: 'mail', color: 'text-[#87CEEB]' },
+            { label: "Support", icon: LifeBuoy, action: 'general-requests', color: 'text-[#EE5D50]' },
+            { label: "Welfare", icon: Heart, action: 'welfare', color: 'text-[#FFB547]' },
+          ].map((item, idx) => (
+            <button
+              key={idx}
+              onClick={() => item.action === 'mail' ? alert("Opening Outlook...") : onNavigate(item.action)}
+              className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 hover:border-[#0B4DA2]/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group active:scale-95"
+            >
+              <div className="bg-[#F4F7FE] p-3 rounded-2xl mb-3 group-hover:bg-[#0B4DA2] group-hover:text-white transition-colors shadow-sm">
+                <item.icon size={24} className={`${item.color} group-hover:text-white transition-colors`} />
+              </div>
+              <span className="text-xs font-bold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors">{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

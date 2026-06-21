@@ -14,7 +14,7 @@ interface AttendanceRecord {
 }
 
 export const AttendancePage = () => {
-    const { attendanceHistory } = useApp();
+    const { attendanceHistory, isClockedIn, clockInTime, handleClockIn, handleClockOut } = useApp();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
@@ -96,6 +96,37 @@ export const AttendancePage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Section - Stats */}
                 <div className="lg:col-span-1 space-y-6">
+                    {/* Daily Attendance Clock In/Out Card */}
+                    <div className="bg-white rounded-[24px] p-6 shadow-lg border border-gray-100 flex flex-col items-center justify-center text-center space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-[#042A5B]/10 flex items-center justify-center text-[#042A5B]">
+                            <Clock className="w-8 h-8 animate-pulse" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-[#1B254B] text-lg">Daily Attendance</h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {isClockedIn 
+                                    ? `Clocked in at ${clockInTime}`
+                                    : 'You are not clocked in yet.'
+                                }
+                            </p>
+                        </div>
+                        {isClockedIn ? (
+                            <button
+                                onClick={handleClockOut}
+                                className="w-full py-3 bg-[#EE5D50] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#D84A3D] transition-colors active:scale-95 shadow-md hover:shadow-lg"
+                            >
+                                <Clock className="w-4 h-4" /> Clock Out
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleClockIn}
+                                className="w-full py-3 bg-[#042A5B] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#0B4DA2] transition-colors active:scale-95 shadow-md hover:shadow-lg"
+                            >
+                                <Clock className="w-4 h-4" /> Clock In
+                            </button>
+                        )}
+                    </div>
+
                     {/* Stats Cards */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white rounded-[20px] p-4 shadow-lg border-l-4 border-green-500">

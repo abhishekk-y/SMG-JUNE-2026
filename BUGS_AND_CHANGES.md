@@ -282,6 +282,13 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `fix(frontend): migrate Login component to centralized login API service`
 **Status:** FIXED
 
+### BUG-031 — Employee Dashboard Missing Legacy Quick Actions
+**File:** `frontend/src/pages/DashboardPage.tsx`
+**Root Cause:** The new Dashboard implementation only contained 4 quick actions, dropping features that users expected from the legacy dashboard (like Gate Pass, Mail, Welfare, etc).
+**Fix:** Restored all 8 quick actions, mapping to respective modules and keeping the robust, responsive, icon-based styling.
+**Commit:** `fix(BUG-031): restore legacy 8 quick actions to employee DashboardPage`
+**Status:** FIXED
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints

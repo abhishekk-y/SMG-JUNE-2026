@@ -105,6 +105,7 @@ export const getAdminRequests = () => apiFetch('/admin/requests');
 // ═══════════════════════════════════════
 export const getAttendance = (userId: string) => apiFetch(`/attendance/${userId}`);
 export const createAttendance = (data: any) => apiFetch('/attendance', { method: 'POST', body: JSON.stringify(data) });
+export const updateAttendance = (id: string, data: any) => apiFetch(`/attendance/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const getAllAttendance = () => apiFetch('/attendance-all');
 
 // ═══════════════════════════════════════
