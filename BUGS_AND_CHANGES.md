@@ -1,4 +1,5 @@
 # Bugs and Changes Log - SMG Employee Portal
+**Author:** abhishekk-y
 
 This document tracks all functional bugs discovered during code audits and UAT, along with the corresponding fixes.
 
