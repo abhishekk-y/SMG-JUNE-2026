@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { getProjects, createProject, downloadPDF } from '../services/api';
 
-export const ProjectsPage = () => {
+export const ProjectsPage = ({ initialSelectedId, onNavigate }: { initialSelectedId?: string, onNavigate?: any }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [dbProjects, setDbProjects] = useState<any[]>([]);
@@ -37,6 +37,8 @@ export const ProjectsPage = () => {
       .then(data => setDbProjects(data))
       .catch(console.error);
   }, []);
+
+
 
   const handleAddProject = async () => {
     if (!newProject.name) return alert('Project name is required');
@@ -217,6 +219,17 @@ export const ProjectsPage = () => {
       tasks: []
     }
   ];
+
+  useEffect(() => {
+    if (initialSelectedId) {
+      // Find project in hardcoded or fetched list
+      const allProjs = [...projects, ...dbProjects];
+      const target = allProjs.find(p => p.id.toString() === initialSelectedId.toString());
+      if (target) {
+        setSelectedProject(target);
+      }
+    }
+  }, [initialSelectedId, dbProjects]);
 
   // Merge mock projects with DB projects, mapping DB fields to UI fields
   const allProjects = [

@@ -462,11 +462,14 @@ export default function App() {
 
 function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMobileMenuOpen, handleLogout }) {
   const { currentUser } = useApp();
+  
+  const [basePage, pageId] = (activePage || '').split(':');
+
   const renderContent = () => {
-    switch (activePage) {
+    switch (basePage) {
       // Main Pages
       case 'dashboard': return <DashboardPage userData={currentUser} onNavigate={setActivePage} />;
-      case 'projects': return <ProjectsPage />;
+      case 'projects': return <ProjectsPage initialSelectedId={pageId} onNavigate={setActivePage} />;
       case 'profile': return <ProfilePage userData={currentUser} />;
 
       // Service Catalog Sub-items
@@ -526,11 +529,11 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
   return (
     <div className="bg-[#F4F7FE] min-h-screen font-sans text-[#1B254B] selection:bg-[#0B4DA2] selection:text-white">
       {userRole === 'admin' ? (
-        <AdminSidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
+        <AdminSidebar activePage={basePage} onNavigate={setActivePage} onLogout={handleLogout} />
       ) : userRole === 'superadmin' ? (
-        <SuperAdminSidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
+        <SuperAdminSidebar activePage={basePage} onNavigate={setActivePage} onLogout={handleLogout} />
       ) : (
-        <Sidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
+        <Sidebar activePage={basePage} onNavigate={setActivePage} onLogout={handleLogout} />
       )}
       <div className="lg:ml-[80px] min-h-screen flex flex-col transition-all duration-300">
         <Topbar onMobileMenu={() => setMobileMenuOpen(true)} onNavigate={setActivePage} />

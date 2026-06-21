@@ -361,7 +361,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
                 handleCloseModal();
                 if (modalType === 'notification') onNavigate('notifications');
                 if (modalType === 'training') onNavigate('training');
-                if (modalType === 'project') onNavigate('projects');
+                if (modalType === 'project') onNavigate(`projects:${selectedItem.id}`);
                 if (modalType === 'asset') onNavigate('asset-requests');
               }} className="flex-1 bg-[#0B4DA2] hover:bg-[#042A5B] text-white py-3 rounded-xl font-bold transition-colors shadow-md shadow-blue-900/20">
                 Go to Dashboard
