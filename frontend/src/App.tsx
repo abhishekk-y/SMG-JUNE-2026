@@ -412,8 +412,28 @@ const INITIAL_DATA = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<'employee' | 'admin' | 'department' | 'superadmin'>('employee');
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'dashboard';
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== activePage) {
+        setActivePage(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (isLoggedIn && userRole !== 'department') {
+      window.location.hash = activePage;
+    }
+  }, [activePage, isLoggedIn, userRole]);
 
   const handleLogin = (role: 'employee' | 'admin' | 'department' | 'superadmin') => {
     setUserRole(role);
