@@ -335,11 +335,11 @@ router.get('/dashboard/:userId', async (req, res) => {
             GatePass.countDocuments({ user: userId, status: 'Pending' }),
             Payroll.find({ user: userId }).sort({ year: -1 }).limit(1),
             Training.countDocuments({ enrolledUsers: userId }),
-            Notification.countDocuments({ user: userId, read: false }),
+            Notification.countDocuments({ user: userId, isRead: false }),
             Announcement.find({ isActive: true }).sort({ createdAt: -1 }).limit(3).populate('postedBy', 'name')
         ]);
         res.json({
-            leaveBalance: leaveBalance ? (leaveBalance.casual.total - leaveBalance.casual.used + leaveBalance.sick.total - leaveBalance.sick.used + leaveBalance.earned.total - leaveBalance.earned.used) : 0,
+            leaveBalance: leaveBalance ? (leaveBalance.casualTotal - leaveBalance.casualUsed + leaveBalance.sickTotal - leaveBalance.sickUsed + leaveBalance.annualTotal - leaveBalance.annualUsed) : 0,
             pendingRequests: pendingLeaves + pendingGP,
             trainingEnrolled: trainings,
             unreadNotifications: notifications,
