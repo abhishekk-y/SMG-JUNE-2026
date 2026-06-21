@@ -487,7 +487,7 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       case 'gate-pass': return <GatePassPage />;
 
       // Work & Pay Pages
-      case 'payroll': return <PayrollPage />;
+      case 'payroll': return <PayrollPageOld user={currentUser} />;
       case 'training': return <TrainingPage />;
       case 'documents': return <DocumentsPage />;
 

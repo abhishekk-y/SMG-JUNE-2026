@@ -13,6 +13,7 @@ import {
   CreditCard,
   FileText
 } from 'lucide-react';
+import { getPayroll, downloadPDF } from '../services/api';
 
 const months = [
   "January 2024", "February 2024", "March 2024", "April 2024", 
@@ -52,54 +53,61 @@ const PayslipCard = ({ month, gross, net, onView, onDownload }) => (
 );
 
 export const PayrollPageOld = ({ user }) => {
-  const [selectedMonth, setSelectedMonth] = useState("October 2024");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
-    fetch(`http://localhost:5000/api/payroll/${userId}`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setPayrollRecords(data))
+    getPayroll(userId)
+      .then(data => {
+        setPayrollRecords(data);
+        if (data.length > 0) {
+          setSelectedMonth(data[0].month);
+        }
+      })
       .catch(() => {});
   }, []);
 
-  const getPayrollId = (month: string) => {
-    const rec = payrollRecords.find(p => p.month === month);
-    return rec?._id || null;
+  const getPayrollRecord = (month: string) => {
+    return payrollRecords.find(p => p.month === month);
   };
 
   const handleView = (month: string) => {
-    const id = getPayrollId(month);
-    if (id) window.open(`http://localhost:5000/api/pdf/payslip/${id}`, '_blank');
+    const rec = getPayrollRecord(month);
+    if (rec?._id) downloadPDF('payslip', rec._id);
     else alert(`No payslip record found for ${month}`);
   };
 
   const handleDownload = (month: string) => {
-    const id = getPayrollId(month);
-    if (id) {
-      window.open(`http://localhost:5000/api/pdf/payslip/${id}`, '_blank');
-    } else alert(`No payslip record found for ${month}`);
+    const rec = getPayrollRecord(month);
+    if (rec?._id) downloadPDF('payslip', rec._id);
+    else alert(`No payslip record found for ${month}`);
   };
 
+  const currentRecord = getPayrollRecord(selectedMonth) || payrollRecords[0] || {};
+
   const earnings = {
-    basic: 45000,
-    hra: 18000,
-    conveyance: 1600,
-    specialAllowance: 15400,
-    bonus: 5000
+    basic: currentRecord.basicSalary || 0,
+    hra: currentRecord.hra || 0,
+    conveyance: currentRecord.conveyance || 0,
+    specialAllowance: currentRecord.specialAllowance || 0,
+    allowances: currentRecord.allowances || 0
   };
 
   const deductions = {
-    pf: 5400,
-    esi: 675,
-    professionalTax: 200,
-    tds: 4500
+    pf: currentRecord.pf || 0,
+    tax: currentRecord.tax || 0,
+    professionalTax: currentRecord.professionalTax || 0,
+    other: currentRecord.otherDeductions || 0
   };
 
-  const totalEarnings = Object.values(earnings).reduce((a, b) => a + b, 0);
-  const totalDeductions = Object.values(deductions).reduce((a, b) => a + b, 0);
-  const netSalary = totalEarnings - totalDeductions;
+  const totalEarnings = currentRecord.grossSalary || 0;
+  const totalDeductions = currentRecord.totalDeductions || 0;
+  const netSalary = currentRecord.netSalary || 0;
+
+  const currentYear = currentRecord.year || new Date().getFullYear();
+  const availableMonths = payrollRecords.map(p => p.month);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -143,8 +151,8 @@ export const PayrollPageOld = ({ user }) => {
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="px-4 py-2 bg-[#F4F7FE] rounded-xl text-sm font-bold text-[#0B4DA2] outline-none border border-transparent focus:border-[#0B4DA2]/30"
               >
-                {months.map(month => (
-                  <option key={month} value={month}>{month}</option>
+                {availableMonths.map(month => (
+                  <option key={month} value={month}>{month} {currentYear}</option>
                 ))}
               </select>
             </div>
@@ -212,7 +220,7 @@ export const PayrollPageOld = ({ user }) => {
 
           {/* Payslip History */}
           <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
-            <h3 className="font-bold text-[#1B254B] text-lg mb-4">Payslip History (2024)</h3>
+            <h3 className="font-bold text-[#1B254B] text-lg mb-4">Payslip History ({currentYear})</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {payrollRecords.map((rec) => (
                 <PayslipCard
@@ -239,7 +247,7 @@ export const PayrollPageOld = ({ user }) => {
           <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
             <h3 className="font-bold text-[#1B254B] text-lg mb-4 flex items-center gap-2">
               <PieChart size={20} className="text-[#0B4DA2]" />
-              Tax Summary (FY 2024)
+              Tax Summary (FY {currentYear})
             </h3>
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 rounded-xl">
