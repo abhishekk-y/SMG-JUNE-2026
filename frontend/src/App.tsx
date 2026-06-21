@@ -453,20 +453,68 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
               </button>
             </div>
             <nav className="space-y-2 overflow-y-auto">
-              {[
-                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                { id: 'projects', label: 'Projects', icon: Briefcase },
-                { id: 'canteen', label: 'Canteen', icon: Coffee },
-                { id: 'welfare', label: 'Welfare', icon: Heart }
-              ].map(item => (
-                <button
-                  key={item.id}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-colors ${activePage === item.id ? 'bg-[#0B4DA2] text-white' : 'text-gray-500 hover:bg-[#F4F7FE]'}`}
-                  onClick={() => { setActivePage(item.id); setMobileMenuOpen(false); }}
-                >
-                  <item.icon size={20} />{item.label}
-                </button>
-              ))}
+              {(() => {
+                const getMobileMenuItems = (role) => {
+                  if (role === 'superadmin') {
+                    return [
+                      { id: 'super-dashboard', label: 'Super Dashboard', icon: LayoutDashboard },
+                      { id: 'super-users', label: 'User Management', icon: User },
+                      { id: 'super-departments', label: 'Departments', icon: Home },
+                      { id: 'super-requests', label: 'All Requests', icon: FileText },
+                      { id: 'super-analytics', label: 'Analytics', icon: Settings },
+                      { id: 'super-announcements', label: 'Announcements', icon: Megaphone },
+                      { id: 'super-notifications', label: 'Broadcast Notifications', icon: Bell },
+                      { id: 'super-settings', label: 'System Settings', icon: Settings },
+                      { id: 'super-reports', label: 'Reports & Export', icon: FolderOpen }
+                    ];
+                  } else if (role === 'admin') {
+                    return [
+                      { id: 'admin-dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
+                      { id: 'admin-requests', label: 'View Requests', icon: FileText },
+                      { id: 'admin-users', label: 'User Management', icon: User },
+                      { id: 'admin-attendance', label: 'Attendance Admin', icon: Calendar },
+                      { id: 'admin-training', label: 'Training Management', icon: BookOpen },
+                      { id: 'admin-analytics', label: 'Department Analytics', icon: Settings },
+                      { id: 'admin-notifications', label: 'Notifications', icon: Bell },
+                      { id: 'admin-announcements', label: 'Announcements', icon: Megaphone },
+                      { id: 'admin-projects', label: 'Project Listing', icon: Briefcase },
+                      { id: 'admin-production', label: 'Production Area', icon: Settings },
+                      { id: 'admin-payroll', label: 'Payroll Admin', icon: FileText }
+                    ];
+                  } else {
+                    return [
+                      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                      { id: 'projects', label: 'Projects & Work', icon: Briefcase },
+                      { id: 'canteen', label: 'Canteen', icon: Coffee },
+                      { id: 'guest-house', label: 'Guest House', icon: Home },
+                      { id: 'transport', label: 'Transport', icon: Bus },
+                      { id: 'uniform', label: 'Uniform Requests', icon: Shirt },
+                      { id: 'sim-allocation', label: 'SIM Allocation', icon: Smartphone },
+                      { id: 'asset-requests', label: 'Asset Requests', icon: Package },
+                      { id: 'general-requests', label: 'General Requests', icon: FileText },
+                      { id: 'leaves', label: 'Leaves', icon: Calendar },
+                      { id: 'gate-pass', label: 'Gate Pass', icon: Shield },
+                      { id: 'my-attendance', label: 'My Attendance', icon: Eye },
+                      { id: 'payroll', label: 'Payroll & Salary', icon: FileText },
+                      { id: 'training', label: 'Training', icon: BookOpen },
+                      { id: 'profile', label: 'My Profile', icon: User },
+                      { id: 'welfare', label: 'Employee Welfare', icon: Heart },
+                      { id: 'imagine', label: 'SMG Imagine', icon: Lightbulb },
+                      { id: 'policies', label: 'Company Policies', icon: BookOpen },
+                      { id: 'announcements', label: 'Announcements', icon: Megaphone }
+                    ];
+                  }
+                };
+                return getMobileMenuItems(userRole).map(item => (
+                  <button
+                    key={item.id}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-colors ${activePage === item.id ? 'bg-[#0B4DA2] text-white' : 'text-gray-500 hover:bg-[#F4F7FE]'}`}
+                    onClick={() => { setActivePage(item.id); setMobileMenuOpen(false); }}
+                  >
+                    <item.icon size={20} />{item.label}
+                  </button>
+                ));
+              })()}
             </nav>
             <div className="mt-auto pt-6 border-t border-gray-100">
               <button onClick={handleLogout} className="flex items-center gap-2 text-[#EE5D50] font-bold w-full p-2 hover:bg-red-50 rounded-xl transition-colors">
