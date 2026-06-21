@@ -207,6 +207,8 @@ export const requestTransport = (data: any) =>
 export const getUniformRequests = (userId: string) => apiFetch(`/uniforms/${userId}`);
 export const requestUniform = (data: any) =>
     apiFetch('/uniforms', { method: 'POST', body: JSON.stringify(data) });
+export const cancelUniformRequest = (id: string) =>
+    apiFetch(`/uniforms/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'Rejected' }) });
 
 // ═══════════════════════════════════════
 // SIM
