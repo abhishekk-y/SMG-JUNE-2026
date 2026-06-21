@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiFetch, downloadPDF } from '../services/api';
 import { LogOut, Calendar, Clock, FileText, CheckCircle, XCircle, Upload, AlertCircle, Download, Search, Ban, Eye, RefreshCw, Printer, X, Filter, TrendingUp } from 'lucide-react';
 
 interface GatePassHistory {
@@ -25,7 +26,7 @@ interface GatePassStats {
 
 export const GatePassPage = () => {
     const handleDownload = (id: string) => {
-        window.open(`http://localhost:5000/api/pdf/gatepass/${id}`, '_blank');
+        downloadPDF('gatepass', id);
     };
     const [gatePassType, setGatePassType] = useState('Official Work Outside');
     const [exitDate, setExitDate] = useState('');
@@ -51,8 +52,7 @@ export const GatePassPage = () => {
     const fetchHistory = useCallback(() => {
         const userId = localStorage.getItem('userId');
         if (!userId) return;
-        fetch(`http://localhost:5000/api/gatepasses/${userId}`)
-            .then(res => res.ok ? res.json() : [])
+        apiFetch(`/gatepasses/${userId}`)
             .then(data => {
                 setGatePassHistory(data.map((gp: any) => ({
                     id: gp._id,
@@ -68,8 +68,7 @@ export const GatePassPage = () => {
                 })));
             })
             .catch(console.error);
-        fetch(`http://localhost:5000/api/gatepasses/${userId}/stats`)
-            .then(res => res.ok ? res.json() : null)
+        apiFetch(`/gatepasses/${userId}/stats`)
             .then(data => { if (data) setStats(data); })
             .catch(console.error);
     }, []);
@@ -82,8 +81,7 @@ export const GatePassPage = () => {
 
     const handleCancelPass = (passId: string) => {
         if (!confirm('Are you sure you want to cancel this gate pass?')) return;
-        fetch(`http://localhost:5000/api/gatepasses/${passId}/cancel`, { method: 'PUT' })
-            .then(res => res.ok ? res.json() : Promise.reject())
+        apiFetch(`/gatepasses/${passId}/cancel`, { method: 'PUT' })
             .then(() => { showToast('Gate pass cancelled successfully', 'info'); fetchHistory(); })
             .catch(() => showToast('Failed to cancel gate pass', 'error'));
     };
@@ -128,12 +126,10 @@ export const GatePassPage = () => {
         };
 
         setIsSubmitting(true);
-        fetch('http://localhost:5000/api/gatepasses', {
+        apiFetch('/gatepasses', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user: userId, type: mapType(gatePassType), date: exitDate, outTime: exitTime, inTime: expectedReturnTime, reason, status: 'Pending' })
         })
-        .then(res => res.ok ? res.json() : Promise.reject())
         .then(newGP => {
             showToast(`Gate Pass ${newGP.passId} submitted successfully!`, 'success');
             fetchHistory();
