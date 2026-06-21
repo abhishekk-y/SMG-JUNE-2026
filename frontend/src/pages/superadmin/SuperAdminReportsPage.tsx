@@ -1,5 +1,6 @@
 import React from 'react';
 import { FolderOpen, Download } from 'lucide-react';
+import { downloadPDF } from '../../services/api';
 
 export const SuperAdminReportsPage = () => {
   const reports = [
@@ -9,9 +10,7 @@ export const SuperAdminReportsPage = () => {
   ];
 
   const handleDownload = (id: string) => {
-    // BUG-023 FIX: Wired report downloads to the backend PDF generation route
-    const url = `http://localhost:5000/api/pdf/report/${id}`;
-    window.open(url, '_blank');
+    downloadPDF('report', id);
   };
 
   return (
