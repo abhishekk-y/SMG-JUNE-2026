@@ -292,7 +292,13 @@ Each bug is fixed individually with a dedicated git commit.
 ### ADD-ON-001 — Dashboard UI/UX Revamp & Functional Ticker
 **File:** `frontend/src/pages/DashboardPage.tsx`
 **Details:** Redesigned the Dashboard Welcome banner to include decorative background elements for a more premium look. Added a functional "Priority Action Ticker" to alert users of pending items directly under the header. Compacted the Quick Actions grid with refined padding and typography to stretch cleanly across wide screens while remaining visually tight.
-**Commit:** `feat(ADD-ON-001): revamp Dashboard UI with Priority Ticker and refined Quick Actions`
+**Commit:** `feat(ADD-ON-001): revamp Dashboard UI to perfectly match legacy Quick Actions and add My Assets`
+**Status:** IMPLEMENTED
+
+### ADD-ON-002 — Dashboard Layout Stretch & Functional Widgets
+**File:** `frontend/src/pages/DashboardPage.tsx`
+**Details:** Reorganized layout structure by moving Quick Actions directly below the Welcome Banner. Replaced the static "Welcome back" text with a time-based dynamic greeting (`Good Morning`, `Good Afternoon`, etc.) without emojis. Made Recent Activity and Upcoming Events lists fully clickable, routing to appropriate portal modules (`notifications`, `training`). Added an "Active Projects" progress tracker to complement the widget grid, stretching the layout cleanly across the screen.
+**Commit:** `feat(ADD-ON-002): reorganize layout, enhance greetings, and add Active Projects widget`
 **Status:** IMPLEMENTED
 
 ## Earlier Fixes (Pre-Audit)

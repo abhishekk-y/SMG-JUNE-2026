@@ -36,6 +36,13 @@ const THEME = {
   }
 };
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 18) return 'Good Afternoon';
+  return 'Good Evening';
+};
+
 export const DashboardPage = ({ userData, onNavigate }) => {
   const { leaveBalance, requests, trainings, attendanceHistory, notifications } = useApp();
 
@@ -72,8 +79,14 @@ export const DashboardPage = ({ userData, onNavigate }) => {
     { name: 'Magic Keyboard', type: 'Accessory', status: 'Fair', icon: Keyboard }
   ];
 
+  const activeProjects = [
+    { id: 1, name: 'Employee Portal Upgrade', role: 'Frontend Lead', progress: 85 },
+    { id: 2, name: 'Q3 Security Audit', role: 'Contributor', progress: 40 },
+    { id: 3, name: 'Mobile App Beta', role: 'Reviewer', progress: 15 }
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-[#0B4DA2] via-[#083A7E] to-[#042A5B] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
         {/* Subtle decorative circles */}
@@ -82,7 +95,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
         
         <div className="flex items-center justify-between relative z-10">
           <div>
-            <h1 className="text-white mb-2 text-2xl md:text-3xl font-extrabold tracking-tight">Welcome back, {userData.name}! 👋</h1>
+            <h1 className="text-white mb-2 text-2xl md:text-3xl font-extrabold tracking-tight">{getGreeting()}, {userData.name}</h1>
             <p className="text-[#87CEEB] opacity-90 text-sm md:text-base max-w-lg">Here's what's happening with your account today. You have {requests?.filter(r => r.status === 'Pending').length || 0} pending items requiring attention.</p>
           </div>
           <div className="hidden md:block">
@@ -115,116 +128,7 @@ export const DashboardPage = ({ userData, onNavigate }) => {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
-            <div className="flex items-start justify-between mb-4">
-              <div className={`p-3 rounded-xl ${stat.bgClass}`}>
-                <stat.icon className="text-white" size={24} />
-              </div>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                {stat.trend}
-              </span>
-            </div>
-            <h3 className="text-[#1B254B] mb-1">{stat.value}</h3>
-            <p className="text-sm text-[#A3AED0]">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[#1B254B]">Recent Activity</h3>
-            <button className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
-              View All <ArrowRight size={16} />
-            </button>
-          </div>
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  activity.status === 'success' ? 'bg-[#05CD99]' :
-                  activity.status === 'warning' ? 'bg-[#FFB547]' :
-                  'bg-[#87CEEB]'
-                }`} />
-                <div className="flex-1">
-                  <p className="font-bold text-[#1B254B] text-sm">{activity.type}</p>
-                  <p className="text-sm text-[#A3AED0]">{activity.desc}</p>
-                  <p className="text-xs text-[#A3AED0] mt-1">{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Events */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[#1B254B]">Upcoming Events</h3>
-            <button className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
-              Calendar <ArrowRight size={16} />
-            </button>
-          </div>
-          <div className="space-y-4">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-100 hover:border-[#0B4DA2] transition-all">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] rounded-xl flex flex-col items-center justify-center text-white shrink-0">
-                  <span className="text-xs font-bold">{event.date.split(' ')[1]}</span>
-                  <span className="text-[10px] text-[#87CEEB]">{event.date.split(' ')[0]}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-[#1B254B]">{event.title}</p>
-                  <p className="text-sm text-[#A3AED0] flex items-center gap-1 mt-1">
-                    <Clock size={14} /> {event.time}
-                  </p>
-                </div>
-                <span className="text-xs font-bold text-[#0B4DA2] bg-blue-50 px-3 py-1 rounded-lg">
-                  {event.type}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* My Assets */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-[#1B254B]">My Assets</h3>
-            <button onClick={() => onNavigate('general-requests')} className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
-              View All <ArrowRight size={16} />
-            </button>
-          </div>
-          <div className="space-y-4">
-            {myAssets.map((asset, idx) => {
-              const AssetIcon = asset.icon;
-              return (
-                <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-blue-100 p-2.5 rounded-xl text-[#0B4DA2]">
-                      <AssetIcon size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-[#1B254B] text-sm">{asset.name}</p>
-                      <p className="text-xs text-gray-500">{asset.type}</p>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
-                    asset.status === 'Excellent' ? 'bg-green-100 text-green-700' :
-                    asset.status === 'Good' ? 'bg-blue-100 text-blue-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {asset.status}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
+      {/* Quick Actions (Moved up here) */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-[#1B254B] mb-6 font-bold text-lg">Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
@@ -249,6 +153,142 @@ export const DashboardPage = ({ userData, onNavigate }) => {
               <span className="text-[11px] font-bold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors uppercase tracking-wider">{item.label}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {stats.map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+            <div className="flex items-start justify-between mb-4">
+              <div className={`p-3 rounded-xl ${stat.bgClass}`}>
+                <stat.icon className="text-white" size={24} />
+              </div>
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                {stat.trend}
+              </span>
+            </div>
+            <h3 className="text-[#1B254B] mb-1">{stat.value}</h3>
+            <p className="text-sm text-[#A3AED0]">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Activity */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[#1B254B] font-bold text-lg">Recent Activity</h3>
+            <button onClick={() => onNavigate('notifications')} className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
+              View All <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="space-y-4 flex-1">
+            {recentActivity.map((activity) => (
+              <div key={activity.id} onClick={() => alert(`Viewing notification details:\n\n${activity.type}\n${activity.desc}`)} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group hover:shadow-sm">
+                <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                  activity.status === 'success' ? 'bg-[#05CD99]' :
+                  activity.status === 'warning' ? 'bg-[#FFB547]' :
+                  'bg-[#87CEEB]'
+                }`} />
+                <div className="flex-1">
+                  <p className="font-bold text-[#1B254B] text-sm group-hover:text-[#0B4DA2] transition-colors">{activity.type}</p>
+                  <p className="text-sm text-[#A3AED0] line-clamp-2">{activity.desc}</p>
+                  <p className="text-xs text-[#A3AED0] mt-1 font-medium">{activity.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Upcoming Events */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[#1B254B] font-bold text-lg">Upcoming Events</h3>
+            <button onClick={() => onNavigate('training')} className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
+              Training <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="space-y-4 flex-1">
+            {upcomingEvents.map((event) => (
+              <div key={event.id} onClick={() => alert(`Opening training details for: ${event.title}`)} className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-50 bg-white hover:border-[#0B4DA2] hover:shadow-md transition-all cursor-pointer group">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#0B4DA2] to-[#042A5B] rounded-xl flex flex-col items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                  <span className="text-xs font-bold">{event.date.split(' ')[1]}</span>
+                  <span className="text-[10px] text-[#87CEEB] font-medium tracking-wide uppercase">{event.date.split(' ')[0]}</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors">{event.title}</p>
+                  <p className="text-sm text-[#A3AED0] flex items-center gap-1.5 mt-1 font-medium">
+                    <Clock size={14} className="text-[#87CEEB]" /> {event.time}
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-[#0B4DA2] bg-[#F4F7FE] px-3 py-1.5 rounded-lg border border-blue-100">
+                  {event.type}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Projects */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[#1B254B] font-bold text-lg">Active Projects</h3>
+            <button onClick={() => onNavigate('projects')} className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
+              View All <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="space-y-5 flex-1">
+            {activeProjects.map((project) => (
+              <div key={project.id} onClick={() => alert(`Opening project workspace for: ${project.name}`)} className="group cursor-pointer p-4 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#1B254B] group-hover:text-[#0B4DA2] transition-colors">{project.name}</h4>
+                    <p className="text-xs text-gray-500 font-medium">{project.role}</p>
+                  </div>
+                  <span className="text-xs font-bold text-[#0B4DA2] bg-blue-50 px-2 py-1 rounded-md">{project.progress}%</span>
+                </div>
+                <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden shadow-inner">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#0B4DA2] to-[#87CEEB] transition-all duration-1000" style={{ width: `${project.progress}%` }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* My Assets */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[#1B254B] font-bold text-lg">My Assets</h3>
+            <button onClick={() => onNavigate('general-requests')} className="text-[#0B4DA2] text-sm font-bold hover:text-[#042A5B] transition-colors flex items-center gap-1">
+              View All <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="space-y-4 flex-1">
+            {myAssets.map((asset, idx) => {
+              const AssetIcon = asset.icon;
+              return (
+                <div key={idx} onClick={() => alert(`Opening asset details for: ${asset.name}`)} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 cursor-pointer group">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white shadow-sm p-2.5 rounded-xl text-[#0B4DA2] border border-gray-100">
+                      <AssetIcon size={20} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#1B254B] text-sm">{asset.name}</p>
+                      <p className="text-xs text-gray-500 font-medium">{asset.type}</p>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
+                    asset.status === 'Excellent' ? 'bg-green-100 text-green-700' :
+                    asset.status === 'Good' ? 'bg-blue-100 text-blue-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {asset.status}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
