@@ -31,6 +31,8 @@ export function Login({ onLogin }: LoginProps) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data._id);
         localStorage.setItem('userData', JSON.stringify(data));
+        // 'employee_user' is read by api.ts to get the JWT for all apiFetch() calls
+        localStorage.setItem('employee_user', JSON.stringify(data));
         onLogin(data.role || selectedRole);
       } else {
         alert(data.message || 'Login failed');
