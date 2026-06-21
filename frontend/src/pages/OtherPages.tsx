@@ -9,10 +9,10 @@ import {
   getPayroll, getTrainings, enrollTraining,
   getDocuments, getWelfarePrograms, enrollWelfare,
   getIdeas, submitIdea, getPolicies, getAnnouncements,
-  getNotifications, markNotificationRead
+  getNotifications, markNotificationRead,
+  downloadPDF
 } from '../services/api';
 
-const API = 'http://localhost:5000/api';
 
 const SimplePage = ({ icon: Icon, title, description, children }: any) => (
   <div className="space-y-6">
@@ -438,7 +438,7 @@ export const PayrollPage = () => {
   }, []);
 
   const handleDownload = (payslipId: string) => {
-    window.open(`${API}/pdf/payslip/${payslipId}`, '_blank');
+    downloadPDF('payslip', payslipId);
   };
 
   return (
