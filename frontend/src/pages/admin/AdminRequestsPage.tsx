@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, downloadPDF } from '../../services/api';
 import {
   FileText,
   Filter,
@@ -31,8 +32,7 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
   const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/admin/requests')
-      .then(res => res.ok ? res.json() : [])
+    apiFetch('/admin/requests')
       .then(data => setRequests(data))
       .catch(console.error);
   }, []);
@@ -55,13 +55,12 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
 
   const handleApprove = (req) => {
     let endpoint = '';
-    if (req.type === 'Leave Request') endpoint = `/api/leaves/${req.id}/approve`;
-    else if (req.type === 'Gate Pass') endpoint = `/api/gatepasses/${req.id}/approve`;
-    else endpoint = `/api/requests/${req.id}/approve`;
+    if (req.type === 'Leave Request') endpoint = `/leaves/${req.id}/approve`;
+    else if (req.type === 'Gate Pass') endpoint = `/gatepasses/${req.id}/approve`;
+    else endpoint = `/requests/${req.id}/approve`;
 
-    fetch(`http://localhost:5000${endpoint}`, {
+    apiFetch(endpoint, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     }).then(() => {
       setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r));
@@ -76,13 +75,12 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
   const handleRejectWithComment = () => {
     if (comment.trim() && selectedRequest) {
       let endpoint = '';
-      if (selectedRequest.type === 'Leave Request') endpoint = `/api/leaves/${selectedRequest.id}/reject`;
-      else if (selectedRequest.type === 'Gate Pass') endpoint = `/api/gatepasses/${selectedRequest.id}/reject`;
-      else endpoint = `/api/requests/${selectedRequest.id}/reject`;
+      if (selectedRequest.type === 'Leave Request') endpoint = `/leaves/${selectedRequest.id}/reject`;
+      else if (selectedRequest.type === 'Gate Pass') endpoint = `/gatepasses/${selectedRequest.id}/reject`;
+      else endpoint = `/requests/${selectedRequest.id}/reject`;
 
-      fetch(`http://localhost:5000${endpoint}`, {
+      apiFetch(endpoint, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: comment })
       }).then(() => {
         setRequests(requests.map(r => r.id === selectedRequest.id ? { ...r, status: 'Rejected', rejectionReason: comment } : r));
@@ -95,9 +93,9 @@ export const AdminRequestsPage = ({ onNavigate }: AdminRequestsPageProps) => {
 
   const handleDownloadPDF = (req) => {
     if (req.type === 'Leave Request') {
-      window.open(`http://localhost:5000/api/pdf/leave/${req.id}`, '_blank');
+      downloadPDF('leave', req.id);
     } else if (req.type === 'Gate Pass') {
-      window.open(`http://localhost:5000/api/pdf/gatepass/${req.id}`, '_blank');
+      downloadPDF('gatepass', req.id);
     } else {
       alert(`No PDF available for ${req.type}`);
     }
