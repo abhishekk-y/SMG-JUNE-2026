@@ -149,10 +149,9 @@ export const AppProvider = ({ children }) => {
         id: l._id, type: l.type, startDate: l.from?.split('T')[0], endDate: l.to?.split('T')[0], days: l.days, reason: l.reason, status: l.status, appliedDate: l.createdAt?.split('T')[0]
       })));
       if (lvBal) setLeaveBalance({
-        casual: { total: lvBal.casual||12, used: lvBal.casualUsed||0, remaining: (lvBal.casual||12) - (lvBal.casualUsed||0) },
-        sick: { total: lvBal.sick||7, used: lvBal.sickUsed||0, remaining: (lvBal.sick||7) - (lvBal.sickUsed||0) },
-        earned: { total: lvBal.earned||15, used: lvBal.earnedUsed||0, remaining: (lvBal.earned||15) - (lvBal.earnedUsed||0) },
-        privilege: { total: lvBal.privilege||10, used: lvBal.privilegeUsed||0, remaining: (lvBal.privilege||10) - (lvBal.privilegeUsed||0) }
+        annual: { total: lvBal.annualTotal||20, used: lvBal.annualUsed||0, remaining: (lvBal.annualTotal||20) - (lvBal.annualUsed||0) },
+        sick:   { total: lvBal.sickTotal||10,  used: lvBal.sickUsed||0,   remaining: (lvBal.sickTotal||10)  - (lvBal.sickUsed||0) },
+        casual: { total: lvBal.casualTotal||8, used: lvBal.casualUsed||0, remaining: (lvBal.casualTotal||8) - (lvBal.casualUsed||0) }
       });
       if (reqs) setRequests(reqs.map((r: any) => ({
         id: r._id, employeeId: userId, type: r.type, category: r.category, reason: r.reason, date: r.createdAt?.split('T')[0], status: r.status, priority: r.priority
@@ -175,7 +174,7 @@ export const AppProvider = ({ children }) => {
         id: a._id, title: a.title, content: a.content, date: a.createdAt?.split('T')[0], author: a.postedBy?.name||'Admin', status: 'Published', type: a.type, priority: a.priority
       })));
       if (notif) setNotifications(notif.map((n: any) => ({
-        id: n._id, title: n.title, message: n.message, type: n.type, time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '-', isRead: n.read, timestamp: new Date(n.createdAt)
+        id: n._id, title: n.title, message: n.message, type: n.type, time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '-', isRead: n.isRead, timestamp: new Date(n.createdAt)
       })));
     })();
   }, []);
@@ -488,8 +487,16 @@ export const AppProvider = ({ children }) => {
     setClockOutTime(currentTime);
     
     if (clockInTime) {
-      const hours = 9;
-      const minutes = Math.floor(Math.random() * 60);
+      // Calculate actual hours worked from clock-in to now
+      const now = new Date();
+      const [inTime, period] = clockInTime.split(' ');
+      const [inH, inM] = inTime.split(':').map(Number);
+      let inHour = inH % 12 + (period === 'PM' ? 12 : 0);
+      const inMinutes = inHour * 60 + inM;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const diffMinutes = Math.max(0, nowMinutes - inMinutes);
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = diffMinutes % 60;
       const hoursWorked = `${hours}h ${minutes}m`;
       setTodayHours(hoursWorked);
       
