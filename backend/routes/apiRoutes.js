@@ -538,6 +538,31 @@ router.put('/notifications/:id/read', async (req, res) => {
     try { res.json(await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true })); }
     catch (err) { res.status(500).json({ message: err.message }); }
 });
+router.post('/notifications/broadcast', async (req, res) => {
+    try {
+        const { audience, title, message, department } = req.body;
+        let query = {};
+        if (audience === 'Admins only') {
+            query = { role: { $in: ['admin', 'superadmin'] } };
+        } else if (audience === 'By Department' && department) {
+            query = { dept: department };
+        }
+
+        const users = await User.find(query);
+        const notifications = users.map(user => ({
+            user: user._id,
+            title,
+            message,
+            type: 'info',
+            category: 'System',
+            isRead: false
+        }));
+
+        await Notification.insertMany(notifications);
+        res.status(201).json({ message: `Successfully broadcasted to ${users.length} users.` });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 
 // ════════════════════════════════════════
 //  DEPARTMENTS
