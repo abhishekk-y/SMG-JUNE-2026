@@ -130,10 +130,104 @@ const Topbar = ({ onMobileMenu, onNavigate }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center bg-white rounded-full px-4 py-2 shadow-sm w-64 border border-transparent hover:border-[#0B4DA2]/30 transition-colors focus-within:border-[#0B4DA2]/50 focus-within:ring-2 focus-within:ring-[#0B4DA2]/10">
-          <Search size={16} className="text-gray-400" />
-          <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none w-full ml-2 text-sm text-[#1B254B] placeholder-gray-400" />
-        </div>
+        {(() => {
+          const [searchQuery, setSearchQuery] = useState('');
+          const [showSearchResults, setShowSearchResults] = useState(false);
+
+          const allSearchableItems = [
+            // Employees
+            { label: 'Dashboard', id: 'dashboard', roles: ['employee'] },
+            { label: 'Projects & Work', id: 'projects', roles: ['employee'] },
+            { label: 'Canteen Services', id: 'canteen', roles: ['employee'] },
+            { label: 'Guest House Booking', id: 'guest-house', roles: ['employee'] },
+            { label: 'Transport Booking', id: 'transport', roles: ['employee'] },
+            { label: 'Uniform Request', id: 'uniform', roles: ['employee'] },
+            { label: 'SIM Allocation', id: 'sim-allocation', roles: ['employee'] },
+            { label: 'Asset Requests', id: 'asset-requests', roles: ['employee'] },
+            { label: 'General Request Form', id: 'general-requests', roles: ['employee'] },
+            { label: 'Leaves Application', id: 'leaves', roles: ['employee'] },
+            { label: 'Gate Pass Application', id: 'gate-pass', roles: ['employee'] },
+            { label: 'My Attendance Logs', id: 'my-attendance', roles: ['employee'] },
+            { label: 'Payroll & Salary Slips', id: 'payroll', roles: ['employee'] },
+            { label: 'Training Programs', id: 'training', roles: ['employee'] },
+            { label: 'My Profile', id: 'profile', roles: ['employee'] },
+            { label: 'Employee Welfare', id: 'welfare', roles: ['employee'] },
+            { label: 'SMG Imagine Submissions', id: 'imagine', roles: ['employee'] },
+            { label: 'Company Policies', id: 'policies', roles: ['employee'] },
+            { label: 'Company Announcements', id: 'announcements', roles: ['employee'] },
+
+            // Admins
+            { label: 'Admin Dashboard', id: 'admin-dashboard', roles: ['admin'] },
+            { label: 'View Employee Requests', id: 'admin-requests', roles: ['admin'] },
+            { label: 'User Management', id: 'admin-users', roles: ['admin'] },
+            { label: 'Attendance HOD View', id: 'admin-attendance', roles: ['admin'] },
+            { label: 'Training HOD Management', id: 'admin-training', roles: ['admin'] },
+            { label: 'Department Analytics', id: 'admin-analytics', roles: ['admin'] },
+            { label: 'Admin Notifications', id: 'admin-notifications', roles: ['admin'] },
+            { label: 'Post Announcements', id: 'admin-announcements', roles: ['admin'] },
+            { label: 'Project Listing Admin', id: 'admin-projects', roles: ['admin'] },
+            { label: 'Production Area Monitor', id: 'admin-production', roles: ['admin'] },
+            { label: 'Payroll HOD Admin', id: 'admin-payroll', roles: ['admin'] },
+            { label: 'Department Documents', id: 'dept-documents', roles: ['admin'] },
+
+            // Super Admins
+            { label: 'Super Admin Dashboard', id: 'super-dashboard', roles: ['superadmin'] },
+            { label: 'Super Admin Users', id: 'super-users', roles: ['superadmin'] },
+            { label: 'Super Admin Departments', id: 'super-departments', roles: ['superadmin'] },
+            { label: 'All Company Requests', id: 'super-requests', roles: ['superadmin'] },
+            { label: 'Company Analytics', id: 'super-analytics', roles: ['superadmin'] },
+            { label: 'Post Broadcast Announcement', id: 'super-announcements', roles: ['superadmin'] },
+            { label: 'Broadcast Notifications', id: 'super-notifications', roles: ['superadmin'] },
+            { label: 'System Settings', id: 'super-settings', roles: ['superadmin'] },
+            { label: 'Reports & Export', id: 'super-reports', roles: ['superadmin'] }
+          ];
+
+          const filteredItems = allSearchableItems.filter(item => {
+            const matchesQuery = item.label.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesRole = item.roles.includes(currentUser?.role || 'employee');
+            return matchesQuery && matchesRole;
+          });
+
+          return (
+            <div className="hidden sm:flex items-center bg-white rounded-full px-4 py-2 shadow-sm w-64 border border-transparent hover:border-[#0B4DA2]/30 transition-colors focus-within:border-[#0B4DA2]/50 focus-within:ring-2 focus-within:ring-[#0B4DA2]/10 relative">
+              <Search size={16} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search portal..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchResults(true);
+                }}
+                onFocus={() => setShowSearchResults(true)}
+                className="bg-transparent border-none outline-none w-full ml-2 text-sm text-[#1B254B] placeholder-gray-400"
+              />
+              {showSearchResults && searchQuery && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowSearchResults(false)} />
+                  <div className="absolute left-0 right-0 mt-12 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto p-2">
+                    {filteredItems.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onNavigate(item.id);
+                          setSearchQuery('');
+                          setShowSearchResults(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-[#1B254B] hover:bg-blue-50 hover:text-[#0B4DA2] rounded-xl transition-colors"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                    {filteredItems.length === 0 && (
+                      <div className="text-center py-4 text-xs text-gray-400">No results found</div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="relative">
           <button
