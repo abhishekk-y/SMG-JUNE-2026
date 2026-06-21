@@ -282,6 +282,8 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `fix(frontend): migrate Login component to centralized login API service`
 **Status:** FIXED
 
+---
+
 ### BUG-031 — Employee Dashboard Missing Legacy Quick Actions
 **File:** `frontend/src/pages/DashboardPage.tsx`
 **Root Cause:** The new Dashboard implementation only contained 4 quick actions, dropping features that users expected from the legacy dashboard (like Gate Pass, Mail, Welfare, etc).
@@ -289,11 +291,15 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `fix(BUG-031): restore legacy 8 quick actions to employee DashboardPage`
 **Status:** FIXED
 
+---
+
 ### ADD-ON-001 — Dashboard UI/UX Revamp & Functional Ticker
 **File:** `frontend/src/pages/DashboardPage.tsx`
 **Details:** Redesigned the Dashboard Welcome banner to include decorative background elements for a more premium look. Added a functional "Priority Action Ticker" to alert users of pending items directly under the header. Compacted the Quick Actions grid with refined padding and typography to stretch cleanly across wide screens while remaining visually tight.
 **Commit:** `feat(ADD-ON-001): revamp Dashboard UI to perfectly match legacy Quick Actions and add My Assets`
 **Status:** IMPLEMENTED
+
+---
 
 ### ADD-ON-002 — Dashboard Layout Stretch & Functional Widgets
 **File:** `frontend/src/pages/DashboardPage.tsx`
@@ -301,11 +307,15 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `feat(ADD-ON-002): reorganize layout, enhance greetings, and add Active Projects widget`
 **Status:** IMPLEMENTED
 
+---
+
 ### ADD-ON-003 — Full API Integration & Mock Data Removal (Projects & Transport)
 **Files:** `backend/routes/apiRoutes.js`, `frontend/src/services/api.ts`, `frontend/src/pages/ProjectsPageEnhanced.tsx`, `frontend/src/pages/TransportPage.tsx`
 **Details:** Finalized MongoDB CRUD operations for the Project and Transport modules. Extracted all hardcoded mock arrays and replaced them with live authenticated data streams. Upgraded the Transport module to include both a 1-click "Request Seat" option for predefined routes and a comprehensive custom "Request Transport" form for outstation or special requests.
 **Commit:** `feat(Integration): fully connect Projects and Transport modules to backend, remove all mock data`
 **Status:** IMPLEMENTED
+
+---
 
 ### BUG-032 — Duplicate API Function Declarations Causing Vite Crash (White Screen)
 **File:** `frontend/src/services/api.ts`
@@ -314,11 +324,15 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `fix: resolve duplicate api definitions causing white screen, and add company logo to sidebar and favicon`
 **Status:** FIXED
 
+---
+
 ### ADD-ON-004 — Inject Actual Company Logo and Favicon
 **Files:** `frontend/index.html`, `frontend/src/components/Sidebar.tsx`, `frontend/src/components/SuperAdminSidebar.tsx`
 **Details:** Replaced generic "S" text gradient placeholders in the navigation sidebars with the official `Company Logo.jpg`. Applied `rounded-full` styling, white backgrounds, and `object-contain` to properly center and brand the logo. Also injected the logo into `index.html` as the browser favicon and changed the `<title>` to "SMG Employee Portal".
 **Commit:** `fix: resolve duplicate api definitions causing white screen, and add company logo to sidebar and favicon`
 **Status:** IMPLEMENTED
+
+---
 
 ## Earlier Fixes (Pre-Audit)
 
