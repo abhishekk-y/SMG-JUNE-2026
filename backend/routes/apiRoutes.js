@@ -234,7 +234,7 @@ router.post('/users/create-employee', async (req, res) => {
             user: newUser._id,
             title: 'Welcome to SMG Portal!',
             message: `Welcome ${name}! Your account has been created. Employee ID: ${empId}`,
-            type: 'success', category: 'Account'
+            type: 'success', category: 'System'
         });
 
         // Send Email with Credentials
@@ -315,7 +315,7 @@ router.put('/users/:id/change-password', async (req, res) => {
             user: user._id,
             title: 'Password Changed',
             message: 'Your password has been changed successfully. If you did not make this change, contact your administrator immediately.',
-            type: 'warning', category: 'Account'
+            type: 'warning', category: 'System'
         });
 
         res.json({ message: 'Password changed successfully' });
@@ -811,7 +811,7 @@ router.put('/requests/:id', async (req, res) => {
                 title: 'Request Status Updated',
                 message: `Your ${request.type || 'request'} has been ${req.body.status}.`,
                 type: req.body.status === 'Approved' ? 'success' : 'warning',
-                category: 'Requests'
+                category: 'Request'
             });
         }
         res.json(request);
@@ -819,24 +819,7 @@ router.put('/requests/:id', async (req, res) => {
     catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// ════════════════════════════════════════
-//  DASHBOARD STATS (aggregated)
-// ════════════════════════════════════════
-router.get('/dashboard/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const [user, leaveBalance, pendingRequests, notifications, recentRequests, meetings, attendance] = await Promise.all([
-            User.findById(userId).select('-password'),
-            LeaveBalance.findOne({ user: userId, year: new Date().getFullYear() }),
-            Request.countDocuments({ user: userId, status: 'Pending' }),
-            Notification.find({ user: userId, isRead: false }).sort({ createdAt: -1 }).limit(5),
-            Request.find({ user: userId }).sort({ createdAt: -1 }).limit(5),
-            Meeting.find({ participants: userId }).populate('organizer', 'name').sort({ date: -1 }).limit(5),
-            Attendance.find({ user: userId }).sort({ date: -1 }).limit(7)
-        ]);
-        res.json({ user, leaveBalance, pendingRequests, notifications, recentRequests, meetings, attendance });
-    } catch (err) { res.status(500).json({ message: err.message }); }
-});
+// NOTE: Duplicate /dashboard/:userId removed here (BUG-003). The real handler is at line 329.
 
 // ════════════════════════════════════════
 //  ADMIN AGGREGATES
@@ -844,7 +827,7 @@ router.get('/dashboard/:userId', async (req, res) => {
 router.get('/admin/dashboard', async (_req, res) => {
     try {
         const totalEmployees = await User.countDocuments();
-        const activeEmployees = await User.countDocuments({ status: { $ne: 'Inactive' } });
+        const activeEmployees = await User.countDocuments({ isActive: true });
         const onLeave = await Leave.countDocuments({ status: 'Approved', from: { $lte: new Date() }, to: { $gte: new Date() } });
         const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
         const pendingGatePasses = await GatePass.countDocuments({ status: 'Pending' });
@@ -1208,7 +1191,7 @@ router.put('/dept-store/:key', async (req, res) => {
                         </div>
                     `;
                     try {
-                        await sendEmail('tuskydv@gmail.com', `New Interview Candidate: ${item.candidateName || 'N/A'}`, emailHtml);
+                        await sendEmail(process.env.HR_EMAIL || 'hr@smg.com', `New Interview Candidate: ${item.candidateName || 'N/A'}`, emailHtml);
                     } catch (err) {
                         console.error('Failed to send interview candidate email to HR:', err);
                     }
@@ -1236,7 +1219,7 @@ router.put('/dept-store/:key', async (req, res) => {
                             </div>
                         `;
                         try {
-                            await sendEmail('tuskydv@gmail.com', `Candidate Checked-In: ${item.name || 'N/A'}`, emailHtml);
+                            await sendEmail(process.env.HR_EMAIL || 'hr@smg.com', `Candidate Checked-In: ${item.name || 'N/A'}`, emailHtml);
                         } catch (err) {
                             console.error('Failed to send visitor candidate check-in email to HR:', err);
                         }
@@ -1288,7 +1271,7 @@ router.get('/cross-portal/stats', async (_req, res) => {
 //  NOTIFICATION-CREATING WRAPPERS
 //  (Override leave/gatepass/request POST to auto-notify)
 // ════════════════════════════════════════
-const originalLeavesPost = router.stack.find(r => r.route?.path === '/leaves' && r.route?.methods?.post);
+// BUG-011 removed: dead code (router.stack.find) was here — unused and non-standard
 // Wrap leaves POST to create notification
 router.post('/leaves/apply', async (req, res) => {
     try {
@@ -1417,7 +1400,7 @@ router.put('/gatepasses/:id/cancel', async (req, res) => {
         const gp = await GatePass.findById(req.params.id);
         if (!gp) return res.status(404).json({ message: 'Gate Pass not found' });
         if (gp.status !== 'Pending') return res.status(400).json({ message: 'Only pending gate passes can be cancelled' });
-        gp.status = 'Rejected';
+        gp.status = 'Cancelled';
         await gp.save();
         await createNotification(gp.user, 'Gate Pass Cancelled', `Your gate pass (${gp.passId}) has been cancelled by you.`, 'info');
         res.json(gp);
@@ -1516,116 +1499,8 @@ router.get('/pdf/project/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// ════════════════════════════════════════
-//  MISSING GENERIC ROUTES
-// ════════════════════════════════════════
-
-// -- ATTENDANCE MISS SLIP --
-router.get('/miss-slips/:userId', async (req, res) => {
-    try { res.json(await AttendanceMissSlip.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/miss-slips', async (req, res) => {
-    try { res.status(201).json(await AttendanceMissSlip.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.get('/miss-slips-all', async (_req, res) => {
-    try { res.json(await AttendanceMissSlip.find().populate('user', 'name empId dept').sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- TRAVEL --
-router.get('/travel/:userId', async (req, res) => {
-    try { res.json(await TravelRequest.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/travel', async (req, res) => {
-    try { res.status(201).json(await TravelRequest.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.put('/travel/:id', async (req, res) => {
-    try { res.json(await TravelRequest.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- MRF --
-router.get('/mrf', async (_req, res) => {
-    try { res.json(await MRF.find().sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/mrf', async (req, res) => {
-    try { res.status(201).json(await MRF.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.put('/mrf/:id', async (req, res) => {
-    try { res.json(await MRF.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- INTERVIEWS --
-router.get('/interviews', async (_req, res) => {
-    try { res.json(await Interview.find().sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/interviews', async (req, res) => {
-    try { res.status(201).json(await Interview.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.put('/interviews/:id', async (req, res) => {
-    try { res.json(await Interview.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- JOB DESCRIPTIONS --
-router.get('/job-descriptions', async (_req, res) => {
-    try { res.json(await JobDescription.find().sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/job-descriptions', async (req, res) => {
-    try { res.status(201).json(await JobDescription.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- KEY REPRESENTATIVES --
-router.get('/key-reps', async (_req, res) => {
-    try { res.json(await KeyRepresentative.find().sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/key-reps', async (req, res) => {
-    try { res.status(201).json(await KeyRepresentative.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- WELFARE --
-router.get('/welfare', async (_req, res) => {
-    try { res.json(await WelfareProgram.find().sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/welfare', async (req, res) => {
-    try { res.status(201).json(await WelfareProgram.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.put('/welfare/:id/enroll', async (req, res) => {
-    try { res.json(await WelfareProgram.findByIdAndUpdate(req.params.id, { $addToSet: { enrolledUsers: req.body.userId } }, { new: true })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// -- RESIGNATIONS --
-router.get('/resignations/:userId', async (req, res) => {
-    try { res.json(await Resignation.find({ user: req.params.userId }).sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.get('/resignations-all', async (_req, res) => {
-    try { res.json(await Resignation.find().populate('user', 'name empId dept').sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.post('/resignations', async (req, res) => {
-    try { res.status(201).json(await Resignation.create(req.body)); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
-router.put('/resignations/:id', async (req, res) => {
-    try { res.json(await Resignation.findByIdAndUpdate(req.params.id, req.body, { new: true })); }
-    catch (err) { res.status(500).json({ message: err.message }); }
-});
+// BUG-002 FIXED: Removed ~111 lines of duplicate routes that were dead code.
+// All routes (miss-slips, travel, mrf, interviews, job-descriptions, key-reps, welfare, resignations)
+// are correctly defined above at lines 988-1110 and should be used from there.
 
 module.exports = router;
