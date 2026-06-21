@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// BUG-009 FIX: import apiFetch so JWT token is sent in Authorization header
+import { apiFetch } from '../../services/api';
 import {
   Users,
   TrendingUp,
@@ -64,9 +66,9 @@ export const AdminDashboard = ({ onNavigate }) => {
   const [departmentStats, setDepartmentStats] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/admin/dashboard')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
+    // BUG-009 FIX: use apiFetch instead of raw fetch so JWT token is sent
+    apiFetch('/admin/dashboard')
+      .then((data: any) => {
         if (data) {
           setStats(data.stats);
           setRecentRequests(data.recentRequests || []);
@@ -278,11 +280,21 @@ export const AdminDashboard = ({ onNavigate }) => {
       <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
         <h3 className="font-bold text-[#1B254B] mb-4 text-lg">Department Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departmentStats.map((dept, idx) => (
+          {departmentStats.map((dept, idx) => {
+            // BUG-027 FIX: dept.color is a Tailwind class like 'bg-blue-500'
+            // .replace('bg-','') gives 'blue-500' which is NOT a valid CSS color
+            // Use a lookup map to get the real hex value
+            const colorMap: Record<string, string> = {
+              'bg-blue-500': '#3B82F6', 'bg-green-500': '#22C55E',
+              'bg-purple-500': '#A855F7', 'bg-orange-500': '#F97316',
+              'bg-teal-500': '#14B8A6', 'bg-red-500': '#EF4444'
+            };
+            const borderHex = colorMap[dept.color] || '#0B4DA2';
+            return (
             <div
               key={idx}
               className="p-4 border-l-4 bg-gray-50 rounded-r-xl hover:shadow-md transition-all cursor-pointer"
-              style={{ borderColor: dept.color.replace('bg-', '') }}
+              style={{ borderColor: borderHex }}
             >
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-bold text-[#1B254B]">{dept.name}</h4>
@@ -303,7 +315,8 @@ export const AdminDashboard = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
