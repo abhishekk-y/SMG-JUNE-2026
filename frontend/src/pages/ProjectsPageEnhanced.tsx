@@ -22,7 +22,7 @@ import {
   FileText,
   Activity
 } from 'lucide-react';
-import { getProjects, createProject } from '../services/api';
+import { getProjects, createProject, downloadPDF } from '../services/api';
 
 export const ProjectsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
@@ -32,8 +32,6 @@ export const ProjectsPage = () => {
   const [newProject, setNewProject] = useState({ name: '', department: '', status: 'Planning', priority: 'Medium', budget: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const API = 'http://localhost:5000/api';
-
   useEffect(() => {
     getProjects()
       .then(data => setDbProjects(data))
@@ -710,7 +708,7 @@ export const ProjectsPage = () => {
                 <FileText size={18} />
                 View Documents
               </button>
-              <button onClick={() => window.open(`http://localhost:5000/api/pdf/project/${selectedProject.id || selectedProject._id}`, '_blank')} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => downloadPDF('project', selectedProject.id || selectedProject._id)} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                 <Download size={18} />
                 Download Report
               </button>
