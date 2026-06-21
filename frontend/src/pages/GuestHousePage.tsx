@@ -11,8 +11,6 @@ export const GuestHousePage = () => {
   const [searched, setSearched] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState<any>(null);
   const [purpose, setPurpose] = useState('');
-
-  const API = 'http://localhost:5000/api';
   const userId = localStorage.getItem('userId');
 
   const guestHouses = [

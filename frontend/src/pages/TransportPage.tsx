@@ -7,7 +7,6 @@ export const TransportPage = () => {
   const [isRequesting, setIsRequesting] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  const API = 'http://localhost:5000/api';
   const userId = localStorage.getItem('userId');
 
   const routes = [

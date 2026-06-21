@@ -3,8 +3,6 @@ import { User, Mail, Phone, MapPin, Calendar, Briefcase, Award, Edit, Save, X } 
 import { useApp } from '../context/AppContextEnhanced';
 import { getUser, updateUser } from '../services/api';
 
-const API = 'http://localhost:5000/api';
-
 export const ProfilePage = () => {
   const { currentUser } = useApp();
   const userId = localStorage.getItem('userId');
