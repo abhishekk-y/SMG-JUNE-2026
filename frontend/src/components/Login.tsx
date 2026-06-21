@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Lock, Mail, ArrowRight, Building2, Users, Shield, Eye, EyeOff } from 'lucide-react';
+import { login } from '../services/api';
 
 interface LoginProps {
   onLogin: (role: 'employee' | 'admin' | 'department' | 'superadmin') => void;
@@ -18,28 +19,18 @@ export function Login({ onLogin }: LoginProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const data = await login(email, password);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        // Store token and user data for API calls
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userId', data._id);
-        localStorage.setItem('userData', JSON.stringify(data));
-        // 'employee_user' is read by api.ts to get the JWT for all apiFetch() calls
-        localStorage.setItem('employee_user', JSON.stringify(data));
-        onLogin(data.role || selectedRole);
-      } else {
-        alert(data.message || 'Login failed');
-      }
-    } catch (error) {
+      // Store token and user data for API calls
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data._id);
+      localStorage.setItem('userData', JSON.stringify(data));
+      // 'employee_user' is read by api.ts to get the JWT for all apiFetch() calls
+      localStorage.setItem('employee_user', JSON.stringify(data));
+      onLogin(data.role || selectedRole);
+    } catch (error: any) {
       console.error("Login error:", error);
-      alert('Failed to connect to server');
+      alert(error.message || 'Failed to connect to server');
     } finally {
       setIsLoading(false);
     }
