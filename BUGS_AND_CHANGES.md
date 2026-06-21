@@ -254,6 +254,34 @@ Each bug is fixed individually with a dedicated git commit.
 
 ---
 
+
+---
+
+### BUG-028 — Hardcoded PDF Download URLs Bypass API Base Configuration
+**Files:** `frontend/src/pages/LeavesPage.tsx`, `frontend/src/pages/ProjectsPageEnhanced.tsx`, `frontend/src/pages/superadmin/SuperAdminReportsPage.tsx`, `frontend/src/pages/admin/AdminRequestsPage.tsx`
+**Root Cause:** PDF downloads triggered via `window.open` hardcoded the `http://localhost:5000` base URL, bypassing the centralized configuration and causing failures in environments with different hosts.
+**Fix:** Created and used `downloadPDF` from `api.ts` to dynamically resolve the API base URL.
+**Commit:** Multiple commits migrating each page to the centralized `downloadPDF` helper.
+**Status:** FIXED
+
+---
+
+### BUG-029 — Unauthenticated Raw fetch Calls & Unused API Base Constants
+**Files:** `frontend/src/pages/GatePassPage.tsx`, `frontend/src/pages/admin/AdminRequestsPage.tsx`, `frontend/src/pages/superadmin/SuperAdminDashboard.tsx`, `frontend/src/pages/ProjectsPageEnhanced.tsx`, `frontend/src/pages/TransportPage.tsx`, `frontend/src/pages/CanteenPage.tsx`, `frontend/src/pages/GuestHousePage.tsx`, `frontend/src/pages/ProfilePage.tsx`
+**Root Cause:** Legacy raw fetch calls bypassed authentication headers (JWT), and dead/unused `const API = 'http://localhost:5000/api'` declarations littered the departmental pages.
+**Fix:** Migrated all remaining raw fetch calls to the centralized `apiFetch` and removed all unused `API` variables.
+**Commit:** Multiple commits migrating and cleaning up departmental page fetches.
+**Status:** FIXED
+
+---
+
+### BUG-030 — Login Component Hardcoded Endpoint Fetch
+**File:** `frontend/src/components/Login.tsx:21`
+**Root Cause:** The Login component executed a raw, manual fetch directly to `http://localhost:5000/api/login`, bypassing the unified API service configuration.
+**Fix:** Refactored the login form submission to utilize the centralized `login` service from `src/services/api.ts`.
+**Commit:** `fix(frontend): migrate Login component to centralized login API service`
+**Status:** FIXED
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
