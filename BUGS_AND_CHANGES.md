@@ -59,8 +59,9 @@ Each bug is fixed individually with a dedicated git commit.
 ### BUG-006 — AppContextEnhanced `fetchSafe` Uses Raw fetch (No Auth)
 **File:** `frontend/src/context/AppContextEnhanced.tsx:125`
 **Root Cause:** `const fetchSafe = async (url) => { const r = await fetch(url) ... }` — unauthenticated.
-**Fix:** PENDING — will replace with `apiFetch()` from `api.ts`.
-**Status:** PENDING
+**Fix:** Replaced raw unauthenticated fetch with `api.apiFetch` that handles bearer token header authentication.
+**Commit:** `fix(BUG-006): use apiFetch for initial data fetching in AppContextEnhanced`
+**Status:** FIXED
 
 ---
 
@@ -76,16 +77,18 @@ Each bug is fixed individually with a dedicated git commit.
 ### BUG-008 — LeavesPage Uses Raw fetch Without JWT Headers
 **File:** `frontend/src/pages/LeavesPage.tsx:20-30,67-94`
 **Root Cause:** Raw `fetch('http://localhost:5000/api/...')` calls bypass the `api.ts` JWT auth layer.
-**Fix:** PENDING — will replace with `apiFetch()` from `api.ts`.
-**Status:** PENDING
+**Fix:** Replaced with `apiFetch` calls to pass user token.
+**Commit:** `fix(BUG-008): replace raw fetch in LeavesPage with authenticated apiFetch`
+**Status:** FIXED
 
 ---
 
 ### BUG-009 — AdminDashboard Uses Raw fetch Without JWT Headers
 **File:** `frontend/src/pages/admin/AdminDashboard.tsx:67`
 **Root Cause:** `fetch('http://localhost:5000/api/admin/dashboard')` with no JWT.
-**Fix:** PENDING — will replace with `apiFetch('/admin/dashboard')`.
-**Status:** PENDING
+**Fix:** Replaced with `apiFetch('/admin/dashboard')` call.
+**Commit:** `fix(BUG-009): fetch admin dashboard stats using authenticated apiFetch`
+**Status:** FIXED
 
 ---
 
@@ -110,33 +113,36 @@ Each bug is fixed individually with a dedicated git commit.
 ### BUG-012 — Gate Pass Cancel Sets `status = 'Rejected'` Instead of `'Cancelled'`
 **File:** `backend/routes/apiRoutes.js:1420`
 **Root Cause:** Employee self-cancelling a gate pass set `gp.status = 'Rejected'`, conflating "employee cancelled" with "admin rejected". Confused approval history.
-**Fix:** Changed to `gp.status = 'Cancelled'`. Note: GatePass model enum needs `'Cancelled'` added.
+**Fix:** Changed to `gp.status = 'Cancelled'`. Added 'Cancelled' to the GatePass status enum.
 **Commit:** `fix(BUG-012): gate pass self-cancel sets Cancelled not Rejected`
-**Status:** FIXED (model enum update pending)
+**Status:** FIXED
 
 ---
 
 ### BUG-013 — SuperAdminRequestsPage Shows Hardcoded Mock Data
 **File:** `frontend/src/pages/superadmin/SuperAdminRequestsPage.tsx`
 **Root Cause:** 4 hardcoded mock requests. `getAllRequests()` from `api.ts` never called.
-**Fix:** PENDING — will wire to real API.
-**Status:** PENDING
+**Fix:** Replaced mock requests with live `apiFetch` call fetching actual requests from MongoDB.
+**Commit:** `fix(BUG-013): connect SuperAdminRequestsPage to live requests API`
+**Status:** FIXED
 
 ---
 
 ### BUG-014 — SuperAdminAnalyticsPage Shows Hardcoded Fake Statistics
 **File:** `frontend/src/pages/superadmin/SuperAdminAnalyticsPage.tsx`
 **Root Cause:** Hardcoded values (96.2%, 12,487 etc). `getCrossPortalStats()` from `api.ts` never called.
-**Fix:** PENDING — will wire to `/cross-portal/stats` backend endpoint.
-**Status:** PENDING
+**Fix:** Replaced mock metrics with dynamic data fetched from the cross-portal stats API.
+**Commit:** `fix(BUG-014): display live cross-portal stats in SuperAdminAnalyticsPage`
+**Status:** FIXED
 
 ---
 
 ### BUG-015 — SuperAdminNotificationsPage Send Button Has No Handler
 **File:** `frontend/src/pages/superadmin/SuperAdminNotificationsPage.tsx:29`
-**Root Cause:** Send button has no `onClick`, form inputs have no state. `triggerGlobalNotification()` from `api.ts` never called.
-**Fix:** PENDING — will add state and wire the broadcast API call.
-**Status:** PENDING
+**Root Cause:** Send button has no `onClick`, form inputs have no state. Broadcast API didn't exist.
+**Fix:** Implemented broadcast endpoint `POST /notifications/broadcast` on the backend, and hooked up controlled inputs + dynamic department selector on the frontend to call this endpoint on submit.
+**Commit:** `fix(BUG-015): implement Super Admin Notification broadcasting`
+**Status:** FIXED
 
 ---
 
@@ -205,24 +211,46 @@ Each bug is fixed individually with a dedicated git commit.
 
 ### BUG-023 — Report Download Buttons Non-Functional (Minor)
 **File:** `frontend/src/pages/superadmin/SuperAdminReportsPage.tsx`
-**Status:** PENDING
+**Root Cause:** Hardcoded list of files with no action or backend generation route.
+**Fix:** Added `generateReportPDF` endpoint `/pdf/report/:reportId` in backend using pdfkit and wired report list buttons to trigger browser PDF open/download.
+**Commit:** `fix(BUG-023): implement Super Admin Report PDF download`
+**Status:** FIXED
+
+---
 
 ### BUG-024 — Settings Checkboxes Uncontrolled/No State (Minor)
 **File:** `frontend/src/pages/superadmin/SuperAdminSettingsPage.tsx`
-**Status:** PENDING
+**Root Cause:** Checkboxes did not bind to React state or store/persist configurations in MongoDB.
+**Fix:** Connected checkboxes to local state and integrated persistent load/save using the generic `/dept-store/system_settings` MongoDB data store.
+**Commit:** `fix(BUG-024): connect settings checkboxes to state and database persistence`
+**Status:** FIXED
+
+---
 
 ### BUG-025 — Mobile Sidebar Missing Most Nav Items (Minor)
 **File:** `frontend/src/App.tsx` (mobile sidebar section)
-**Status:** PENDING
+**Root Cause:** Mobile sidebar was hardcoded to only 4 navigation items regardless of user type.
+**Fix:** Refactored sidebar elements to dynamically generate menu lists according to the logged-in role (employee, admin, superadmin).
+**Commit:** `fix(BUG-025): dynamic mobile sidebar navigation based on userRole`
+**Status:** FIXED
+
+---
 
 ### BUG-026 — Topbar Search Bar Non-Functional (Minor)
 **File:** `frontend/src/App.tsx` (Topbar component)
-**Status:** PENDING
+**Root Cause:** Input was completely uncontrolled and had no functional actions or results dropdown.
+**Fix:** Implemented a smart global search overlay dropdown that dynamically matches matching portal pages relative to user's permissions, enabling instant quick-nav on enter/click.
+**Commit:** `fix(BUG-026): connect Topbar search bar to dynamic page quick-navigation`
+**Status:** FIXED
+
+---
 
 ### BUG-027 — Department Card Border Color Is Invalid CSS
 **File:** `frontend/src/pages/admin/AdminDashboard.tsx:285`
 **Root Cause:** `dept.color.replace('bg-', '')` turns Tailwind class `bg-blue-500` into `blue-500` which is not a valid CSS color. Border renders with no colour.
-**Status:** PENDING
+**Fix:** Implemented color mapping lookup table to resolve Tailwind names to correct hex codes.
+**Commit:** `fix(BUG-027): fix admin dashboard border colors for department cards`
+**Status:** FIXED
 
 ---
 
