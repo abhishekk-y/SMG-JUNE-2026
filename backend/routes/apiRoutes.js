@@ -1587,4 +1587,47 @@ router.get('/cross-portal/stats', async (req, res) => {
 // All routes (miss-slips, travel, mrf, interviews, job-descriptions, key-reps, welfare, resignations)
 // are correctly defined above at lines 988-1110 and should be used from there.
 
+// ════════════════════════════════════════
+//  PROJECTS
+// ════════════════════════════════════════
+router.get('/projects', authMiddleware, async (req, res) => {
+    try {
+        const projects = await Project.find().populate('manager', 'name').populate('teamMembers', 'name avatar email phone');
+        res.json(projects);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.post('/projects', authMiddleware, async (req, res) => {
+    try {
+        const newProject = new Project(req.body);
+        const savedProject = await newProject.save();
+        res.status(201).json(savedProject);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+// ════════════════════════════════════════
+//  TRANSPORT
+// ════════════════════════════════════════
+router.get('/transport/:userId', authMiddleware, async (req, res) => {
+    try {
+        const transports = await Transport.find({ user: req.params.userId }).sort({ date: -1 });
+        res.json(transports);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/transport', authMiddleware, async (req, res) => {
+    try {
+        const transports = await Transport.find().populate('user', 'name empId department').sort({ date: -1 });
+        res.json(transports);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.post('/transport', authMiddleware, async (req, res) => {
+    try {
+        const newTransport = new Transport({ ...req.body, user: req.user.id });
+        const savedTransport = await newTransport.save();
+        res.status(201).json(savedTransport);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
 module.exports = router;

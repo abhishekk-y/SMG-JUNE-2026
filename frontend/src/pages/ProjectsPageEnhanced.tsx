@@ -56,184 +56,20 @@ export const ProjectsPage = ({ initialSelectedId, onNavigate }: { initialSelecte
     }
   };
 
-  const projects = [
-    {
-      id: 1,
-      name: 'Assembly Line Optimization',
-      status: 'In Progress',
-      progress: 65,
-      team: 8,
-      deadline: '2024-12-30',
-      priority: 'High',
-      tasksSummary: { total: 24, completed: 16 },
-      description: 'Optimization of assembly line processes to improve efficiency and reduce production time by 20%',
-      startDate: '2024-11-01',
-      manager: 'Priya Sharma',
-      department: 'Assembly',
-      budget: '₹15,00,000',
-      spent: '₹9,75,000',
-      myRole: 'Senior Technician',
-      teamMembers: [
-        { name: 'Priya Sharma', role: 'Project Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya', email: 'priya.sharma@smg.com', phone: '+91 98765 43211' },
-        { name: 'Rohit Sharma', role: 'Senior Technician', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit', email: 'rohit.sharma@smg.com', phone: '+91 98765 43210' },
-        { name: 'Amit Patel', role: 'Lead Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amit', email: 'amit.patel@smg.com', phone: '+91 98765 43212' },
-        { name: 'Vikram Singh', role: 'Quality Analyst', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram', email: 'vikram.singh@smg.com', phone: '+91 98765 43214' }
-      ],
-      milestones: [
-        { name: 'Initial Assessment', status: 'Completed', date: '2024-11-10', completion: 100, description: 'Completed analysis of current processes' },
-        { name: 'Design Phase', status: 'Completed', date: '2024-11-25', completion: 100, description: 'New workflow designed and approved' },
-        { name: 'Implementation', status: 'In Progress', date: '2024-12-20', completion: 65, description: 'Rolling out new processes across assembly lines' },
-        { name: 'Testing & Validation', status: 'Pending', date: '2024-12-28', completion: 0, description: 'Final testing and quality checks' }
-      ],
-      assets: [
-        { name: 'Assembly Line Equipment', type: 'Machinery', quantity: 5, status: 'Active' },
-        { name: 'Quality Testing Tools', type: 'Equipment', quantity: 12, status: 'Active' },
-        { name: 'Project Management Software', type: 'Software', quantity: 1, status: 'Active' },
-        { name: 'Safety Equipment', type: 'PPE', quantity: 20, status: 'Active' }
-      ],
-      recentUpdates: [
-        { date: '2024-12-11', update: 'Line 3 optimization completed ahead of schedule', author: 'Priya Sharma' },
-        { date: '2024-12-09', update: 'Training session conducted for assembly team', author: 'Rohit Sharma' },
-        { date: '2024-12-07', update: 'New workflow documentation finalized', author: 'Amit Patel' }
-      ],
-      tasks: [
-        { id: 1, name: 'Process Analysis', status: 'Completed', assignee: 'Amit Patel', dueDate: '2024-11-15' },
-        { id: 2, name: 'Workflow Design', status: 'Completed', assignee: 'Priya Sharma', dueDate: '2024-11-25' },
-        { id: 3, name: 'Line 1 Implementation', status: 'Completed', assignee: 'Rohit Sharma', dueDate: '2024-12-05' },
-        { id: 4, name: 'Line 2 Implementation', status: 'Completed', assignee: 'Rohit Sharma', dueDate: '2024-12-10' },
-        { id: 5, name: 'Line 3 Implementation', status: 'In Progress', assignee: 'Rohit Sharma', dueDate: '2024-12-18' },
-        { id: 6, name: 'Quality Testing', status: 'Pending', assignee: 'Vikram Singh', dueDate: '2024-12-28' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Quality Control Enhancement',
-      status: 'In Progress',
-      progress: 45,
-      team: 5,
-      deadline: '2024-12-25',
-      priority: 'Medium',
-      tasksSummary: { total: 18, completed: 8 },
-      description: 'Implementation of advanced quality control measures and automated inspection systems',
-      startDate: '2024-10-15',
-      manager: 'Vikram Singh',
-      department: 'Quality Control',
-      budget: '₹12,00,000',
-      spent: '₹5,40,000',
-      myRole: 'Team Member',
-      teamMembers: [
-        { name: 'Vikram Singh', role: 'QC Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram', email: 'vikram.singh@smg.com', phone: '+91 98765 43214' },
-        { name: 'Priya Sharma', role: 'Quality Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya', email: 'priya.sharma@smg.com', phone: '+91 98765 43211' },
-        { name: 'Meena Iyer', role: 'IT Specialist', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meena', email: 'meena.iyer@smg.com', phone: '+91 98765 43219' }
-      ],
-      milestones: [
-        { name: 'System Selection', status: 'Completed', date: '2024-10-30', completion: 100, description: 'Selected automated inspection system' },
-        { name: 'Installation', status: 'In Progress', date: '2024-12-15', completion: 60, description: 'Installing inspection equipment' },
-        { name: 'Staff Training', status: 'Pending', date: '2024-12-20', completion: 0, description: 'Training staff on new systems' },
-        { name: 'Go Live', status: 'Pending', date: '2024-12-25', completion: 0, description: 'Full system implementation' }
-      ],
-      assets: [
-        { name: 'Automated Inspection System', type: 'Equipment', quantity: 3, status: 'In Transit' },
-        { name: 'QC Software Suite', type: 'Software', quantity: 1, status: 'Active' },
-        { name: 'Testing Equipment', type: 'Tools', quantity: 15, status: 'Active' }
-      ],
-      recentUpdates: [
-        { date: '2024-12-10', update: 'Equipment delivery scheduled for Dec 15', author: 'Vikram Singh' },
-        { date: '2024-12-08', update: 'Staff training schedule finalized', author: 'Priya Sharma' },
-        { date: '2024-12-05', update: 'Installation site preparation completed', author: 'Meena Iyer' }
-      ],
-      tasks: []
-    },
-    {
-      id: 3,
-      name: 'Safety Protocol Update',
-      status: 'Completed',
-      progress: 100,
-      team: 6,
-      deadline: '2024-12-10',
-      priority: 'High',
-      tasksSummary: { total: 12, completed: 12 },
-      description: 'Complete overhaul of workplace safety protocols and emergency response procedures',
-      startDate: '2024-09-01',
-      manager: 'Rohit Verma',
-      department: 'Production',
-      budget: '₹8,00,000',
-      spent: '₹7,85,000',
-      myRole: 'Safety Coordinator',
-      teamMembers: [
-        { name: 'Rohit Verma', role: 'Production Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RohitV', email: 'rohit.verma@smg.com', phone: '+91 98765 43216' },
-        { name: 'Kavita Joshi', role: 'HR Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kavita', email: 'kavita.joshi@smg.com', phone: '+91 98765 43217' }
-      ],
-      milestones: [
-        { name: 'Protocol Review', status: 'Completed', date: '2024-09-20', completion: 100, description: 'Reviewed existing protocols' },
-        { name: 'New Protocol Design', status: 'Completed', date: '2024-10-15', completion: 100, description: 'Designed updated protocols' },
-        { name: 'Staff Training', status: 'Completed', date: '2024-11-30', completion: 100, description: 'Trained all staff members' },
-        { name: 'Implementation', status: 'Completed', date: '2024-12-10', completion: 100, description: 'Full rollout completed' }
-      ],
-      assets: [
-        { name: 'Safety Equipment', type: 'PPE', quantity: 50, status: 'Active' },
-        { name: 'Emergency Response Kits', type: 'Equipment', quantity: 10, status: 'Active' },
-        { name: 'Training Materials', type: 'Documentation', quantity: 1, status: 'Active' }
-      ],
-      recentUpdates: [
-        { date: '2024-12-10', update: 'Project successfully completed', author: 'Rohit Verma' },
-        { date: '2024-12-08', update: 'Final safety audit passed with excellent rating', author: 'Kavita Joshi' },
-        { date: '2024-12-05', update: 'All staff training sessions completed', author: 'Rohit Verma' }
-      ],
-      tasks: []
-    },
-    {
-      id: 4,
-      name: 'Inventory Management System',
-      status: 'Planning',
-      progress: 15,
-      team: 4,
-      deadline: '2025-01-15',
-      priority: 'Low',
-      tasksSummary: { total: 20, completed: 3 },
-      description: 'Digital transformation of inventory tracking and warehouse management processes',
-      startDate: '2024-12-01',
-      manager: 'Suresh Reddy',
-      department: 'Logistics',
-      budget: '₹20,00,000',
-      spent: '₹2,00,000',
-      myRole: 'Observer',
-      teamMembers: [
-        { name: 'Suresh Reddy', role: 'Logistics Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Suresh', email: 'suresh.reddy@smg.com', phone: '+91 98765 43218' },
-        { name: 'Meena Iyer', role: 'IT Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meena', email: 'meena.iyer@smg.com', phone: '+91 98765 43219' }
-      ],
-      milestones: [
-        { name: 'Requirements Gathering', status: 'In Progress', date: '2024-12-15', completion: 40, description: 'Collecting system requirements' },
-        { name: 'Vendor Selection', status: 'Pending', date: '2024-12-28', completion: 0, description: 'Selecting software vendor' },
-        { name: 'System Setup', status: 'Pending', date: '2025-01-10', completion: 0, description: 'System installation and configuration' },
-        { name: 'Go Live', status: 'Pending', date: '2025-01-15', completion: 0, description: 'System deployment' }
-      ],
-      assets: [
-        { name: 'Barcode Scanners', type: 'Equipment', quantity: 20, status: 'Ordered' },
-        { name: 'Inventory Software License', type: 'Software', quantity: 1, status: 'Pending' }
-      ],
-      recentUpdates: [
-        { date: '2024-12-10', update: 'Initial requirements document drafted', author: 'Suresh Reddy' },
-        { date: '2024-12-05', update: 'Budget approved by management', author: 'Suresh Reddy' }
-      ],
-      tasks: []
-    }
-  ];
+  
 
   useEffect(() => {
     if (initialSelectedId) {
-      // Find project in hardcoded or fetched list
-      const allProjs = [...projects, ...dbProjects];
-      const target = allProjs.find(p => p.id.toString() === initialSelectedId.toString());
+      // Find project in fetched list
+      const target = dbProjects.find(p => p._id === initialSelectedId || p.id === initialSelectedId);
       if (target) {
         setSelectedProject(target);
       }
     }
   }, [initialSelectedId, dbProjects]);
 
-  // Merge mock projects with DB projects, mapping DB fields to UI fields
-  const allProjects = [
-    ...dbProjects.map(p => ({
+  // Merge DB projects, mapping DB fields to UI fields
+  const allProjects = dbProjects.map(p => ({
       id: p._id,
       name: p.name,
       status: p.status || 'Planning',
@@ -254,9 +90,7 @@ export const ProjectsPage = ({ initialSelectedId, onNavigate }: { initialSelecte
       assets: [],
       recentUpdates: [],
       tasks: []
-    })),
-    ...projects
-  ];
+    }));
 
   const filteredProjects = filterStatus === 'all'
     ? allProjects
