@@ -35,12 +35,6 @@ export const ProfilePage = () => {
               <p className="text-sm text-white/70 mt-1">Employee ID: {formData.empId || 'N/A'}</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsEditing(!isEditing)}
-            className="bg-white text-[#0B4DA2] px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center gap-2"
-          >
-            {isEditing ? <><X size={20} /> Cancel</> : <><Edit size={20} /> Edit Profile</>}
-          </button>
         </div>
       </div>
 

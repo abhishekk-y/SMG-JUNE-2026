@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard,
@@ -44,25 +43,23 @@ interface MenuItem {
 }
 
 const navigationItems: MenuItem[] = [
-  { 
     id: 'dashboard', 
     name: 'Dashboard', 
     icon: LayoutDashboard, 
-    path: '/employee/dashboard' 
   },
   {
     id: 'projects',
     name: 'Projects & Work',
     icon: Briefcase,
     subItems: [
-      { id: 'service-catalog', name: 'Service Catalog', icon: ClipboardList, path: '/employee/service-catalog' },
-      { id: 'canteen', name: 'Canteen', icon: Coffee, path: '/employee/canteen' },
-      { id: 'guest-house', name: 'Guest House', icon: Home, path: '/employee/guest-house' },
-      { id: 'transport', name: 'Transport', icon: Bus, path: '/employee/transport' },
-      { id: 'uniform', name: 'Uniform', icon: Shirt, path: '/employee/uniform' },
-      { id: 'sim-allocation', name: 'SIM Allocation', icon: Smartphone, path: '/employee/sim-allocation' },
-      { id: 'asset-requests', name: 'Asset Requests', icon: Package, path: '/employee/asset-requests' },
-      { id: 'general-requests', name: 'General Requests', icon: FileText, path: '/employee/requests' },
+      { id: 'service-catalog', name: 'Service Catalog', icon: ClipboardList },
+      { id: 'canteen', name: 'Canteen', icon: Coffee },
+      { id: 'guest-house', name: 'Guest House', icon: Home },
+      { id: 'transport', name: 'Transport', icon: Bus },
+      { id: 'uniform', name: 'Uniform', icon: Shirt },
+      { id: 'sim-allocation', name: 'SIM Allocation', icon: Smartphone },
+      { id: 'asset-requests', name: 'Asset Requests', icon: Package },
+      { id: 'general-requests', name: 'General Requests', icon: FileText },
     ],
   },
   {
@@ -70,72 +67,65 @@ const navigationItems: MenuItem[] = [
     name: 'Attendance',
     icon: Calendar,
     subItems: [
-      { id: 'leaves', name: 'Leaves', icon: CalendarCheck, path: '/employee/leaves' },
-      { id: 'my-attendance', name: 'My Attendance View', icon: Eye, path: '/employee/attendance' },
+      { id: 'leaves', name: 'Leaves', icon: CalendarCheck },
+      { id: 'my-attendance', name: 'My Attendance View', icon: Eye },
     ],
   },
   { 
     id: 'payroll', 
     name: 'Payroll', 
     icon: Receipt, 
-    path: '/employee/payslips' 
   },
   { 
     id: 'training', 
     name: 'Training', 
     icon: GraduationCap, 
-    path: '/employee/training' 
   },
   { 
     id: 'documents', 
     name: 'My Documents', 
     icon: FolderOpen, 
-    path: '/employee/documents' 
   },
   { 
     id: 'profile', 
     name: 'Profile', 
     icon: User, 
-    path: '/employee/profile' 
   },
   { 
     id: 'welfare', 
     name: 'Employee Welfare', 
     icon: Heart, 
-    path: '/employee/welfare' 
   },
   { 
     id: 'imagine', 
     name: 'SMG Imagine', 
     icon: Lightbulb, 
-    path: '/employee/imagine' 
   },
   { 
     id: 'policies', 
     name: 'Policies', 
     icon: BookOpen, 
-    path: '/employee/policies' 
   },
   { 
     id: 'announcements', 
     name: 'Announcements', 
     icon: Megaphone, 
-    path: '/employee/announcements' 
   },
   { 
     id: 'notifications', 
     name: 'Notifications', 
     icon: Bell, 
-    path: '/employee/notifications' 
   },
 ];
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  activePage: string;
+  onNavigate: (page: string) => void;
+  onLogout?: () => void;
 }
 
-export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ activePage, onNavigate, onLogout }: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<string[]>(['projects', 'attendance']);
 
   const toggleDropdown = (id: string) => {
@@ -143,6 +133,8 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
+
+  const onToggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   return (
     <aside
@@ -225,20 +217,18 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <NavLink
-                              to={subItem.path}
-                              className={({ isActive }) =>
-                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${
-                                  isActive
-                                    ? 'bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] text-white shadow-md'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B4DA2]'
-                                }`
-                              }
+                            <button
+                              onClick={() => onNavigate(subItem.id)}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${
+                                activePage === subItem.id
+                                  ? 'bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] text-white shadow-md'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B4DA2]'
+                              }`}
                               aria-label={subItem.name}
                             >
                               <subItem.icon size={16} strokeWidth={2.5} />
                               <span>{subItem.name}</span>
-                            </NavLink>
+                            </button>
                           </motion.li>
                         ))}
                       </motion.ul>
@@ -247,23 +237,21 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                 </div>
               ) : (
                 /* Direct link without dropdown */
-                <NavLink
-                  to={item.path!}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                      isActive
-                        ? 'text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B4DA2]'
-                    }`
-                  }
-                  style={({ isActive }) => ({
-                    background: isActive ? 'linear-gradient(135deg, var(--smg-royal) 0%, var(--smg-dark) 100%)' : 'transparent',
-                  })}
+                <button
+                  onClick={() => onNavigate(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                    activePage === item.id
+                      ? 'text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B4DA2]'
+                  }`}
+                  style={{
+                    background: activePage === item.id ? 'linear-gradient(135deg, var(--smg-royal) 0%, var(--smg-dark) 100%)' : 'transparent',
+                  }}
                   aria-label={item.name}
                 >
                   <item.icon size={20} strokeWidth={2.5} className={isCollapsed ? 'mx-auto' : ''} />
                   {!isCollapsed && <span className="text-sm font-medium">{item.name}</span>}
-                </NavLink>
+                </button>
               )}
             </li>
           ))}

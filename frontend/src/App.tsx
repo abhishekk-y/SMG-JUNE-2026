@@ -471,6 +471,7 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       case 'dashboard': return <DashboardPage userData={currentUser} onNavigate={setActivePage} />;
       case 'projects': return <ProjectsPage initialSelectedId={pageId} onNavigate={setActivePage} />;
       case 'profile': return <ProfilePage userData={currentUser} />;
+      case 'service-catalog': return <DepartmentPortalHub onNavigate={setActivePage} />;
 
       // Service Catalog Sub-items
       case 'canteen': return <CanteenPage />;
