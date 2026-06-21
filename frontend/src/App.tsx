@@ -43,8 +43,8 @@ import { SuperAdminAnnouncementsPage } from './pages/superadmin/SuperAdminAnnoun
 import { SuperAdminNotificationsPage } from './pages/superadmin/SuperAdminNotificationsPage';
 import { SuperAdminSettingsPage } from './pages/superadmin/SuperAdminSettingsPage';
 import { SuperAdminReportsPage } from './pages/superadmin/SuperAdminReportsPage';
+import { UniformPage } from './pages/UniformPage';
 import {
-  UniformPage,
   SIMAllocationPage,
   AssetRequestsPage,
   GeneralRequestsPage,
