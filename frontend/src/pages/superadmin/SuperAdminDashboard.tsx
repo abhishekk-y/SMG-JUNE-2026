@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, Settings, Megaphone, Bell, FolderOpen, FileText, Building2, IndianRupee, GraduationCap, Briefcase, Activity, Calendar, LogIn, LogOut as LogOutIcon } from 'lucide-react';
+import { apiFetch } from '../../services/api';
 
 export const SuperAdminDashboard = ({ onNavigate }) => {
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -11,7 +12,6 @@ export const SuperAdminDashboard = ({ onNavigate }) => {
     setIsClockedIn(true);
   };
   const handleClockOut = () => { setIsClockedIn(false); setClockInTime(null); };
-
   const [stats, setStats] = useState<any>({
     employees: 0,
     monthlyPayroll: '₹0',
@@ -23,8 +23,7 @@ export const SuperAdminDashboard = ({ onNavigate }) => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/admin/dashboard')
-      .then(res => res.ok ? res.json() : null)
+    apiFetch('/admin/dashboard')
       .then(data => {
         if (data) {
           setStats({
