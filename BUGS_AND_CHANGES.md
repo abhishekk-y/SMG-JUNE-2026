@@ -301,6 +301,25 @@ Each bug is fixed individually with a dedicated git commit.
 **Commit:** `feat(ADD-ON-002): reorganize layout, enhance greetings, and add Active Projects widget`
 **Status:** IMPLEMENTED
 
+### ADD-ON-003 — Full API Integration & Mock Data Removal (Projects & Transport)
+**Files:** `backend/routes/apiRoutes.js`, `frontend/src/services/api.ts`, `frontend/src/pages/ProjectsPageEnhanced.tsx`, `frontend/src/pages/TransportPage.tsx`
+**Details:** Finalized MongoDB CRUD operations for the Project and Transport modules. Extracted all hardcoded mock arrays and replaced them with live authenticated data streams. Upgraded the Transport module to include both a 1-click "Request Seat" option for predefined routes and a comprehensive custom "Request Transport" form for outstation or special requests.
+**Commit:** `feat(Integration): fully connect Projects and Transport modules to backend, remove all mock data`
+**Status:** IMPLEMENTED
+
+### BUG-032 — Duplicate API Function Declarations Causing Vite Crash (White Screen)
+**File:** `frontend/src/services/api.ts`
+**Root Cause:** `getTransportRequests` and `requestTransport` were accidentally declared twice during the Transport API integration, triggering a Vite compiler SyntaxError that resulted in a blank white screen.
+**Fix:** Removed the duplicate declarations at the end of the file.
+**Commit:** `fix: resolve duplicate api definitions causing white screen, and add company logo to sidebar and favicon`
+**Status:** FIXED
+
+### ADD-ON-004 — Inject Actual Company Logo and Favicon
+**Files:** `frontend/index.html`, `frontend/src/components/Sidebar.tsx`, `frontend/src/components/SuperAdminSidebar.tsx`
+**Details:** Replaced generic "S" text gradient placeholders in the navigation sidebars with the official `Company Logo.jpg`. Applied `rounded-full` styling, white backgrounds, and `object-contain` to properly center and brand the logo. Also injected the logo into `index.html` as the browser favicon and changed the `<title>` to "SMG Employee Portal".
+**Commit:** `fix: resolve duplicate api definitions causing white screen, and add company logo to sidebar and favicon`
+**Status:** IMPLEMENTED
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
