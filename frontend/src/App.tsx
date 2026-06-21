@@ -534,7 +534,7 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       )}
       <div className="lg:ml-[80px] min-h-screen flex flex-col transition-all duration-300">
         <Topbar onMobileMenu={() => setMobileMenuOpen(true)} onNavigate={setActivePage} />
-        <main className="p-4 lg:p-6 w-full max-w-[1600px] mx-auto pb-24 lg:pb-8">{renderContent()}</main>
+        <main className="p-4 lg:px-8 2xl:px-12 py-6 w-full max-w-[1920px] mx-auto pb-24 lg:pb-8">{renderContent()}</main>
       </div>
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
