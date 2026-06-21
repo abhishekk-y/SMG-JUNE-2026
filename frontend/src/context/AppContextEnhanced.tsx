@@ -120,24 +120,23 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
-    const API = 'http://localhost:5000/api';
-    const fetchSafe = async (url: string) => {
-      try { const r = await fetch(url); return r.ok ? r.json() : null; } catch { return null; }
+    const fetchSafe = async (path: string) => {
+      try { return await api.apiFetch(path); } catch { return null; }
     };
     (async () => {
       const [att, lv, lvBal, reqs, gp, pr, tr, doc, proj, ann, notif, dept] = await Promise.all([
-        fetchSafe(`${API}/attendance/${userId}`),
-        fetchSafe(`${API}/leaves/${userId}`),
-        fetchSafe(`${API}/leave-balance/${userId}`),
-        fetchSafe(`${API}/requests/${userId}`),
-        fetchSafe(`${API}/gatepasses/${userId}`),
-        fetchSafe(`${API}/payroll/${userId}`),
-        fetchSafe(`${API}/trainings`),
-        fetchSafe(`${API}/documents/${userId}`),
-        fetchSafe(`${API}/projects`),
-        fetchSafe(`${API}/announcements`),
-        fetchSafe(`${API}/notifications/${userId}`),
-        fetchSafe(`${API}/departments`)
+        fetchSafe(`/attendance/${userId}`),
+        fetchSafe(`/leaves/${userId}`),
+        fetchSafe(`/leave-balance/${userId}`),
+        fetchSafe(`/requests/${userId}`),
+        fetchSafe(`/gatepasses/${userId}`),
+        fetchSafe(`/payroll/${userId}`),
+        fetchSafe(`/trainings`),
+        fetchSafe(`/documents/${userId}`),
+        fetchSafe(`/projects`),
+        fetchSafe(`/announcements`),
+        fetchSafe(`/notifications/${userId}`),
+        fetchSafe(`/departments`)
       ]);
       if (att) setAttendanceHistory(att.map((a: any, i: number) => ({
         id: a._id || i+1, date: a.date?.split('T')[0], day: new Date(a.date).toLocaleDateString('en-US',{weekday:'long'}),
