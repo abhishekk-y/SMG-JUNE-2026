@@ -406,8 +406,4 @@ export const parseResume = (formData: FormData) =>
 export const triggerGlobalNotification = (module: string, message: string, type: string = 'info') =>
     apiFetch('/notifications/global', { method: 'POST', body: JSON.stringify({ module, message, type }) });
 
-// ═══════════════════════════════════════
-// TRANSPORT
-// ═══════════════════════════════════════
-export const getTransportRequests = (userId: string) => apiFetch(`/transport/${userId}`);
-export const requestTransport = (data: any) => apiFetch('/transport', { method: 'POST', body: JSON.stringify(data) });
+

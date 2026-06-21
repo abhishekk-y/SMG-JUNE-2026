@@ -155,17 +155,17 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
       {/* Logo */}
       <div className="h-16 flex items-center justify-center px-4" style={{ borderBottom: '1px solid var(--smg-border)' }}>
         {isCollapsed ? (
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, var(--smg-royal) 0%, var(--smg-dark) 100%)' }}>
-            <span className="text-white font-bold text-lg">S</span>
+          <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0 bg-white border border-gray-100 flex items-center justify-center p-0.5">
+            <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-contain rounded-full" />
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, var(--smg-royal) 0%, var(--smg-dark) 100%)' }}>
-              <span className="text-white font-bold text-lg">S</span>
+            <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0 bg-white border border-gray-100 flex items-center justify-center p-0.5">
+              <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-contain rounded-full" />
             </div>
             <div>
-              <h3 className="text-sm" style={{ color: 'var(--smg-dark)' }}>SMG Electric Scooter Ltd</h3>
-              <p className="text-xs text-gray-400">Admin Portal</p>
+              <h3 className="text-sm font-bold" style={{ color: 'var(--smg-dark)' }}>SMG Electric</h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Employee Portal</p>
             </div>
           </div>
         )}
