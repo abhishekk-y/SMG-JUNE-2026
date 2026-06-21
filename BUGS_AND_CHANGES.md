@@ -334,6 +334,22 @@ Each bug is fixed individually with a dedicated git commit.
 
 ---
 
+### ADD-ON-005 — Crisp SVG Vector Favicon & Mobile Topbar Branding
+**Files:** `frontend/public/favicon.svg`, `frontend/index.html`, `frontend/src/components/Topbar.tsx`
+**Details:** The previous JPEG favicon was rendering as a square with a white background on browser tabs. Replaced this with a handcrafted, perfectly circular SVG vector graphic (`favicon.svg`) ensuring infinitely crisp, transparent rendering on all devices. Additionally, injected this logo into the Mobile `Topbar` so users still experience proper branding when the Sidebar is collapsed on smaller screens.
+**Commit:** `style(Logo): replace jpeg favicon with perfectly circular SVG vector favicon and update Topbar`
+**Status:** IMPLEMENTED
+
+---
+
+### ADD-ON-006 — Full-Fledged Premium Payroll Integration & DB Seeding
+**Files:** `frontend/src/App.tsx`, `frontend/src/pages/PayrollPageOld.tsx`, `backend/scripts/seedPayroll.js` (Inline)
+**Details:** Replaced the basic stubbed Payroll list with a premium, fully-interactive Dashboard UI (`PayrollPageOld.tsx`) featuring dynamic YTD metrics, conditional "Salary Breakdown" analytics, and visual tax/investment cards. Wrote and executed a Node.js seed script on the backend to automatically populate the MongoDB database with 6 months of realistic payroll data (Jan-Jun 2026) for the active user, fully eliminating hardcoded UI elements.
+**Commit:** `feat(Payroll): replace basic payroll with full-fledged premium UI and seed database demo data`
+**Status:** IMPLEMENTED
+
+---
+
 ## Earlier Fixes (Pre-Audit)
 
 ### 1 — Missing Backend API Endpoints
