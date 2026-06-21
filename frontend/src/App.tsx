@@ -335,6 +335,7 @@ export default function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('userData');
+    localStorage.removeItem('employee_user');
     setIsLoggedIn(false);
     setActivePage('dashboard');
     setUserRole('employee');
@@ -366,12 +367,13 @@ export default function App() {
 }
 
 function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMobileMenuOpen, handleLogout }) {
+  const { currentUser } = useApp();
   const renderContent = () => {
     switch (activePage) {
       // Main Pages
-      case 'dashboard': return <DashboardPage userData={INITIAL_DATA.user} onNavigate={setActivePage} />;
+      case 'dashboard': return <DashboardPage userData={currentUser} onNavigate={setActivePage} />;
       case 'projects': return <ProjectsPage />;
-      case 'profile': return <ProfilePage userData={INITIAL_DATA.user} />;
+      case 'profile': return <ProfilePage userData={currentUser} />;
 
       // Service Catalog Sub-items
       case 'canteen': return <CanteenPage />;
@@ -515,6 +517,7 @@ const Sidebar = ({ activePage, onNavigate, onLogout }) => {
           hasDropdown: true,
           subItems: [
             { id: 'leaves', icon: Calendar, label: 'Leaves' },
+            { id: 'gate-pass', icon: Shield, label: 'Gate Pass' },
             { id: 'my-attendance', icon: Eye, label: 'My Attendance View' }
           ]
         }
