@@ -19,11 +19,15 @@ export function Topbar({ onMenuClick }: TopbarProps) {
       <div className="flex items-center gap-4 flex-1">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors shrink-0"
           aria-label="Open menu"
         >
           <Menu size={24} style={{ color: 'var(--smg-dark)' }} />
         </button>
+
+        <div className="lg:hidden w-8 h-8 rounded-full overflow-hidden shadow-md shrink-0 border border-gray-100 flex items-center justify-center p-0.5 bg-white">
+          <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-contain rounded-full" />
+        </div>
 
         <div className="hidden md:flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2.5 flex-1 max-w-md border border-gray-100">
           <Search size={18} className="text-gray-400" />

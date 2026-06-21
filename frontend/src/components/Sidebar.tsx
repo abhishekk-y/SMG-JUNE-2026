@@ -155,13 +155,13 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
       {/* Logo */}
       <div className="h-16 flex items-center justify-center px-4" style={{ borderBottom: '1px solid var(--smg-border)' }}>
         {isCollapsed ? (
-          <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0 bg-white border border-gray-100 flex items-center justify-center p-0.5">
-            <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-contain rounded-full" />
+          <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0">
+            <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-cover" />
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0 bg-white border border-gray-100 flex items-center justify-center p-0.5">
-              <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-contain rounded-full" />
+            <div className="w-10 h-10 rounded-full overflow-hidden shadow-md flex-shrink-0">
+              <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h3 className="text-sm font-bold" style={{ color: 'var(--smg-dark)' }}>SMG Electric</h3>

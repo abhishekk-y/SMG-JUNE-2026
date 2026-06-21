@@ -33,7 +33,7 @@ export const SuperAdminSidebar = ({ activePage, onNavigate, onLogout }: SuperAdm
     return (
         <aside className="hidden lg:flex w-[80px] hover:w-[260px] bg-[#042A5B] flex-col h-screen fixed left-0 top-0 z-50 border-r border-[#0B4DA2]/30 transition-all duration-300 group shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-[#0B4DA2]/30 flex items-center gap-3 overflow-hidden whitespace-nowrap shrink-0">
-                <div className="w-8 h-8 rounded-xl overflow-hidden shadow-lg shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden shadow-lg shrink-0">
                     <img src="/Company%20Logo.jpg" alt="SMG Logo" className="w-full h-full object-cover" />
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
