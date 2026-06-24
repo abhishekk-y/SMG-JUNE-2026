@@ -412,4 +412,13 @@ export const triggerGlobalNotification = (module: string, message: string, type:
 export const broadcastNotification = (data: { title: string; message: string; audience: string; department?: string; type?: string }) =>
     apiFetch('/notifications/broadcast', { method: 'POST', body: JSON.stringify(data) });
 
+// ═══════════════════════════════════════
+// ADMIN TRAINING & ANNOUNCEMENTS
+// ═══════════════════════════════════════
+export const createTraining = (data: any) => apiFetch('/trainings', { method: 'POST', body: JSON.stringify(data) });
+export const updateTraining = (id: string | number, data: any) => apiFetch(`/trainings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTraining = (id: string | number) => apiFetch(`/trainings/${id}`, { method: 'DELETE' });
 
+export const createAnnouncement = (data: any) => apiFetch('/announcements', { method: 'POST', body: JSON.stringify(data) });
+export const updateAnnouncement = (id: string | number, data: any) => apiFetch(`/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteAnnouncement = (id: string | number) => apiFetch(`/announcements/${id}`, { method: 'DELETE' });

@@ -479,14 +479,20 @@ Full end-to-end audit of all admin portal pages, button handlers, filter logic, 
 
 ---
 
+### BUG-042 — AdminTrainingPage Edit & Delete Buttons Were Non-Functional Stubs
+**File:** `frontend/src/pages/admin/AdminOtherPages.tsx` — `AdminTrainingPage`
+**Root Cause:** "Edit" and "Delete" row buttons in the Training list were dead icons without functionality.
+**Fix:** Added `editingId` state and modified the "Add Training" modal to act as an Edit modal when an ID is passed. Integrated local state modification for edits and deletions. Added empty API endpoint definitions (`updateTraining`, `deleteTraining`) to `api.ts` to prevent runtime errors if called.
+**Status:** FIXED
+
+---
+
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
 
 The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:
 
 | Location | Button | Notes |
 |---|---|---|
-| `AdminUsersPage` | Edit / Delete row buttons | View modal works; edit/delete are next sprint |
-| `AdminTrainingPage` | View / Edit row buttons | Read-only view acceptable for now |
 | `AdminAttendancePage` | No action buttons | Table is read-only intentionally |
 | `AdminOtherPagesEnhanced.tsx` | "Edit Employee" / "Download Profile" in modal | Linked to next sprint HR feature |
 | `AdminRequestsPage` | PDF button for non-leave/gatepass types | Shows alert — correct fallback |

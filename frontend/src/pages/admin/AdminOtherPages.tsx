@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createAnnouncement, createTraining } from '../../services/api';
+import { createAnnouncement, createTraining, updateTraining, deleteTraining } from '../../services/api';
 import {
   Users,
   Calendar,
@@ -481,6 +481,7 @@ export const AdminTrainingPage = () => {
   const [newDate, setNewDate] = useState('');
   const [newDuration, setNewDuration] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [trainings, setTrainings] = useState([
     { id: 1, title: 'Safety Training Program', type: 'Mandatory', dept: 'Production', date: '2024-12-15', duration: '4 hours', enrolled: 45, completed: 12, instructor: 'Vikram Singh' },
@@ -504,16 +505,47 @@ export const AdminTrainingPage = () => {
     if (!newTitle.trim() || !newInstructor.trim() || !newDate) return;
     setIsSaving(true);
     try {
-      await createTraining({ title: newTitle.trim(), type: newType, dept: newDept, instructor: newInstructor.trim(), date: newDate, duration: newDuration || 'TBD' });
-      setTrainings(prev => [{ id: Date.now(), title: newTitle.trim(), type: newType, dept: newDept, date: newDate, duration: newDuration || 'TBD', enrolled: 0, completed: 0, instructor: newInstructor.trim() }, ...prev]);
+      if (editingId) {
+        await updateTraining(editingId, { title: newTitle.trim(), type: newType, dept: newDept, instructor: newInstructor.trim(), date: newDate, duration: newDuration || 'TBD' });
+        setTrainings(prev => prev.map(t => t.id === editingId ? { ...t, title: newTitle.trim(), type: newType, dept: newDept, instructor: newInstructor.trim(), date: newDate, duration: newDuration || 'TBD' } : t));
+      } else {
+        await createTraining({ title: newTitle.trim(), type: newType, dept: newDept, instructor: newInstructor.trim(), date: newDate, duration: newDuration || 'TBD' });
+        setTrainings(prev => [{ id: Date.now(), title: newTitle.trim(), type: newType, dept: newDept, date: newDate, duration: newDuration || 'TBD', enrolled: 0, completed: 0, instructor: newInstructor.trim() }, ...prev]);
+      }
       setShowModal(false);
-      setNewTitle(''); setNewInstructor(''); setNewDate(''); setNewDuration('');
-      setNewType('Mandatory'); setNewDept('All');
     } catch {
-      alert('Failed to create training. Please try again.');
+      alert('Failed to save training. Please try again.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleEditClick = (t: any) => {
+    setEditingId(t.id);
+    setNewTitle(t.title);
+    setNewType(t.type);
+    setNewDept(t.dept);
+    setNewInstructor(t.instructor);
+    setNewDate(t.date);
+    setNewDuration(t.duration);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this training program?')) return;
+    try {
+      await deleteTraining(id);
+      setTrainings(prev => prev.filter(t => t.id !== id));
+    } catch {
+      alert('Failed to delete training.');
+    }
+  };
+
+  const openNewModal = () => {
+    setEditingId(null);
+    setNewTitle(''); setNewInstructor(''); setNewDate(''); setNewDuration('');
+    setNewType('Mandatory'); setNewDept('All');
+    setShowModal(true);
   };
 
   return (
@@ -527,7 +559,7 @@ export const AdminTrainingPage = () => {
               <p className="text-blue-100">Organize and track employee training programs</p>
             </div>
           </div>
-          <button onClick={() => setShowModal(true)} className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+          <button onClick={openNewModal} className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
             <Plus size={18} />Add Training
           </button>
         </div>
@@ -607,8 +639,8 @@ export const AdminTrainingPage = () => {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors" title="View"><Eye size={16} /></button>
-                      <button className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Edit"><Edit size={16} /></button>
+                      <button onClick={() => handleEditClick(training)} className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors" title="Edit"><Edit size={16} /></button>
+                      <button onClick={() => handleDelete(training.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Delete"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -622,7 +654,7 @@ export const AdminTrainingPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-[24px] max-w-xl w-full shadow-2xl animate-in slide-in-from-bottom-4">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-[#1B254B]">Add Training Program</h3>
+              <h3 className="text-xl font-bold text-[#1B254B]">{editingId ? 'Edit Training Program' : 'Add Training Program'}</h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
@@ -672,7 +704,7 @@ export const AdminTrainingPage = () => {
               <button onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancel</button>
               <button onClick={handleCreate} disabled={isSaving || !newTitle.trim() || !newInstructor.trim() || !newDate}
                 className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors disabled:opacity-60">
-                {isSaving ? 'Saving...' : 'Add Training'}
+                {isSaving ? 'Saving...' : (editingId ? 'Save Changes' : 'Add Training')}
               </button>
             </div>
           </div>
