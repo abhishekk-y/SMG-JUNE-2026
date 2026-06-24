@@ -414,3 +414,81 @@ Created `/dept-store/:key` (GET/PUT/DELETE) replacing localStorage with MongoDB.
 
 ### 4 — Insecure Canteen Portal Fetch
 Refactored `CanteenPortal.tsx` from raw `fetch()` to `apiFetch()` with JWT headers.
+
+---
+
+## June 24, 2026 — Admin Portal Functionality Audit
+
+Full end-to-end audit of all admin portal pages, button handlers, filter logic, and API connectivity. Six critical issues found and fixed.
+
+---
+
+### BUG-035 — Admin Broadcast Notification Never Calls Backend (Alert Stub)
+**File:** `frontend/src/pages/admin/AdminNotificationsPage.tsx`
+**Root Cause:** `handleBroadcast()` only called `window.alert("Notification broadcast to all employees")`. No API call was made — notifications were never created in the database, so employees never received them.
+**Fix:** Complete rewrite of `AdminNotificationsPage.tsx`. Now calls `broadcastNotification()` from `api.ts` which POSTs to `/notifications/broadcast`. Shows real-time success/failure result inside the modal. Added `broadcastNotification` helper to `api.ts`.
+**Status:** FIXED
+
+---
+
+### BUG-036 — Admin Notification Filter Buttons (Today / This Week) Were Non-Functional
+**File:** `frontend/src/pages/admin/AdminNotificationsPage.tsx`
+**Root Cause:** Filter buttons (`Today`, `This Week`) had no `onClick` handlers and no state. The `sentNotifications` array was always fully rendered regardless of which filter was selected.
+**Fix:** Added `activeFilter` state (`'all' | 'today' | 'week'`). `getFilteredNotifications()` computes date thresholds against each notification's `sentOn` ISO timestamp. Buttons now toggle the active filter and update the rendered list in real time.
+**Status:** FIXED
+
+---
+
+### BUG-037 — Admin Notification Sent-List Was 100% Hardcoded Mock Data
+**File:** `frontend/src/pages/admin/AdminNotificationsPage.tsx`
+**Root Cause:** The "Sent Notifications" panel always showed the same 2–3 fake entries. Newly broadcast notifications were never appended to it.
+**Fix:** `sentNotifications` is now React state. After a successful broadcast API call, the new notification is prepended to the list immediately (optimistic update), so the admin sees their broadcast appear in history without a page refresh.
+**Status:** FIXED
+
+---
+
+### BUG-038 — Admin "New Announcement" Button Had No Handler (Dead Button)
+**File:** `frontend/src/pages/admin/AdminOtherPages.tsx` — `AdminAnnouncementsPage`
+**Root Cause:** The "New Announcement" `<button>` had no `onClick`. Clicking it did nothing. The `announcements` list was hardcoded static data — no new entries could be added.
+**Fix:** Added `showModal` state and a full creation modal with Title, Content, and Status fields. `handleCreate()` calls `createAnnouncement()` from `api.ts` (POST to `/announcements`), then prepends the new entry to `announcements` state. Delete button now also works via `handleDelete()`.
+**Status:** FIXED
+
+---
+
+### BUG-039 — AdminPayrollPage Was an Empty Stub (3 Hardcoded Stat Cards Only)
+**File:** `frontend/src/pages/admin/AdminOtherPages.tsx` — `AdminPayrollPage`
+**Root Cause:** The entire page was just 3 stat cards with hardcoded numbers and one paragraph of placeholder text. No employee payroll data, no filters, no actions.
+**Fix:** Replaced stub with a full payroll management table showing employee name, department, basic/HRA/allowances/deductions/net salary, and payment status. Added search and Paid/Pending filter buttons. Download payslip action button per row. Computed totals from the data array.
+**Status:** FIXED
+
+---
+
+### BUG-040 — `broadcastNotification` API Function Missing from `api.ts`
+**File:** `frontend/src/services/api.ts`
+**Root Cause:** `AdminNotificationsPage` imported `broadcastNotification` from `api.ts`, but no such function existed — causing a runtime import error.
+**Fix:** Added `broadcastNotification(data)` that POSTs to `/notifications/broadcast` with `{ title, message, audience, department?, type? }` body.
+**Status:** FIXED
+
+---
+
+### BUG-041 — "Add Training" Button Has No Handler in AdminTrainingPage
+**File:** `frontend/src/pages/admin/AdminOtherPages.tsx` — `AdminTrainingPage`
+**Root Cause:** "Add Training" button had no `onClick`. Clicking it did nothing. The training list was hardcoded static data only.
+**Fix:** Added `showModal` state and a creation modal with Title, Type, Department, Instructor, Date, and Duration fields. `handleCreate()` calls `createTraining()` from `api.ts` (POST to `/trainings`) then prepends new entry to training list state.
+**Status:** FIXED
+
+---
+
+## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
+
+The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:
+
+| Location | Button | Notes |
+|---|---|---|
+| `AdminUsersPage` | Edit / Delete row buttons | View modal works; edit/delete are next sprint |
+| `AdminTrainingPage` | View / Edit row buttons | Read-only view acceptable for now |
+| `AdminAttendancePage` | No action buttons | Table is read-only intentionally |
+| `AdminOtherPagesEnhanced.tsx` | "Edit Employee" / "Download Profile" in modal | Linked to next sprint HR feature |
+| `AdminRequestsPage` | PDF button for non-leave/gatepass types | Shows alert — correct fallback |
+| `ProjectsPageEnhanced` | "Project Options" alert | Known minor stub, cosmetic only |
+

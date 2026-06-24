@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createAnnouncement, createTraining } from '../../services/api';
 import {
   Users,
   Calendar,
@@ -35,9 +36,13 @@ import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, Cart
 export const AdminUsersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDept, setFilterDept] = useState('all');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', empId: '', dept: '', role: '', email: '', phone: '', status: 'Active' });
 
-  const users = [
+  const [users, setUsers] = useState([
     { id: 1, name: 'Rajesh Kumar', empId: 'EMP1001', dept: 'Production', role: 'Senior Operator', email: 'rajesh.kumar@smg.com', phone: '+91 98765 43210', status: 'Active', joinDate: '10-Jan-2018', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh' },
     { id: 2, name: 'Priya Sharma', empId: 'EMP1025', dept: 'Quality Control', role: 'QC Inspector', email: 'priya.sharma@smg.com', phone: '+91 98765 43211', status: 'Active', joinDate: '15-Mar-2019', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya' },
     { id: 3, name: 'Amit Patel', empId: 'EMP1089', dept: 'Engineering', role: 'Design Engineer', email: 'amit.patel@smg.com', phone: '+91 98765 43212', status: 'Active', joinDate: '20-Jul-2020', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amit' },
@@ -48,7 +53,7 @@ export const AdminUsersPage = () => {
     { id: 8, name: 'Kavita Joshi', empId: 'EMP1278', dept: 'HR', role: 'HR Manager', email: 'kavita.joshi@smg.com', phone: '+91 98765 43217', status: 'Active', joinDate: '30-Jun-2018', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kavita' },
     { id: 9, name: 'Suresh Reddy', empId: 'EMP1312', dept: 'Finance', role: 'Accountant', email: 'suresh.reddy@smg.com', phone: '+91 98765 43218', status: 'Active', joinDate: '14-Aug-2021', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Suresh' },
     { id: 10, name: 'Meena Iyer', empId: 'EMP1401', dept: 'IT', role: 'System Administrator', email: 'meena.iyer@smg.com', phone: '+91 98765 43219', status: 'Active', joinDate: '25-Jan-2022', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meena' }
-  ];
+  ]);
 
   const departments = ['Production', 'Quality Control', 'Engineering', 'Sales & Marketing', 'Administration', 'R&D', 'HR', 'Finance', 'IT', 'Logistics'];
 
@@ -60,6 +65,18 @@ export const AdminUsersPage = () => {
     const matchesDept = filterDept === 'all' || user.dept === filterDept;
     return matchesSearch && matchesDept;
   });
+
+  const openEdit = (user: any) => { setSelectedUser(user); setIsEditing(true); setEditForm({ ...user }); };
+  const openView = (user: any) => { setSelectedUser(user); setIsEditing(false); };
+  const handleDelete = (id: number) => { if (window.confirm('Delete this user?')) setUsers(prev => prev.filter(u => u.id !== id)); };
+  const handleSaveEdit = () => { setUsers(prev => prev.map(u => u.id === editForm.id ? { ...editForm } : u)); setIsEditing(false); setSelectedUser(editForm); };
+  const handleAddUser = () => {
+    if (!addForm.name.trim() || !addForm.empId.trim()) return;
+    const newUser = { ...addForm, id: Date.now(), joinDate: new Date().toISOString().slice(0, 10), avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${addForm.name}` };
+    setUsers(prev => [newUser, ...prev]);
+    setShowAddModal(false);
+    setAddForm({ name: '', empId: '', dept: '', role: '', email: '', phone: '', status: 'Active' });
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -73,7 +90,7 @@ export const AdminUsersPage = () => {
               <p className="text-blue-100">Manage employee accounts and access control</p>
             </div>
           </div>
-          <button className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+          <button onClick={() => setShowAddModal(true)} className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
             <Plus size={18} />
             Add User
           </button>
@@ -182,16 +199,16 @@ export const AdminUsersPage = () => {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setSelectedUser(user)}
+                        onClick={() => openView(user)}
                         className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors"
                         title="View Profile"
                       >
                         <Eye size={16} />
                       </button>
-                      <button className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Edit">
+                      <button onClick={() => openEdit(user)} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Edit">
                         <Edit size={16} />
                       </button>
-                      <button className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Delete">
+                      <button onClick={() => handleDelete(user.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Delete">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -232,31 +249,64 @@ export const AdminUsersPage = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Department</p>
-                  <p className="font-bold text-[#1B254B]">{selectedUser.dept}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Email</p>
-                  <p className="font-bold text-[#1B254B]">{selectedUser.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Phone</p>
-                  <p className="font-bold text-[#1B254B]">{selectedUser.phone}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Join Date</p>
-                  <p className="font-bold text-[#1B254B]">{selectedUser.joinDate}</p>
-                </div>
+                {isEditing ? (
+                  <>
+                    {[['Name','name'],['Role','role'],['Department','dept'],['Email','email'],['Phone','phone'],['Join Date','joinDate']].map(([label, field]) => (
+                      <div key={field}>
+                        <p className="text-xs text-gray-500 mb-1">{label}</p>
+                        <input value={editForm[field] || ''} onChange={e => setEditForm(f => ({...f, [field]: e.target.value}))}
+                          className="w-full border border-[#0B4DA2] rounded-lg px-3 py-2 text-sm font-bold text-[#1B254B] focus:outline-none" />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <div><p className="text-xs text-gray-500 mb-1">Department</p><p className="font-bold text-[#1B254B]">{selectedUser.dept}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-1">Email</p><p className="font-bold text-[#1B254B]">{selectedUser.email}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-1">Phone</p><p className="font-bold text-[#1B254B]">{selectedUser.phone}</p></div>
+                    <div><p className="text-xs text-gray-500 mb-1">Join Date</p><p className="font-bold text-[#1B254B]">{selectedUser.joinDate}</p></div>
+                  </>
+                )}
               </div>
             </div>
             <div className="p-6 border-t border-gray-100 flex gap-3">
-              <button className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors">
-                Edit Profile
-              </button>
-              <button className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">
-                View Full Details
-              </button>
+              {isEditing ? (
+                <>
+                  <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+                  <button onClick={handleSaveEdit} className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors">Save Changes</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setSelectedUser(null)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">Close</button>
+                  <button onClick={() => openEdit(selectedUser)} className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors">Edit Profile</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-[24px] max-w-xl w-full shadow-2xl animate-in slide-in-from-bottom-4">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-[#1B254B]">Add New User</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="p-6 grid grid-cols-2 gap-4">
+              {([['Full Name *','name','text'],['Employee ID *','empId','text'],['Role','role','text'],['Department','dept','text'],['Email','email','email'],['Phone','phone','text']] as [string,string,string][]).map(([label,field,type]) => (
+                <div key={field}>
+                  <label className="block text-sm font-bold text-[#1B254B] mb-1">{label}</label>
+                  <input type={type} value={(addForm as any)[field]} onChange={e => setAddForm(f => ({...f, [field]: e.target.value}))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:border-[#0B4DA2] outline-none" />
+                </div>
+              ))}
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
+              <button onClick={handleAddUser} disabled={!addForm.name.trim() || !addForm.empId.trim()}
+                className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold disabled:opacity-60">Add User</button>
             </div>
           </div>
         </div>
@@ -423,14 +473,22 @@ export const AdminAttendancePage = () => {
 export const AdminTrainingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newType, setNewType] = useState('Mandatory');
+  const [newDept, setNewDept] = useState('All');
+  const [newInstructor, setNewInstructor] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newDuration, setNewDuration] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const trainings = [
+  const [trainings, setTrainings] = useState([
     { id: 1, title: 'Safety Training Program', type: 'Mandatory', dept: 'Production', date: '2024-12-15', duration: '4 hours', enrolled: 45, completed: 12, instructor: 'Vikram Singh' },
     { id: 2, title: 'Quality Control Standards', type: 'Mandatory', dept: 'Quality Control', date: '2024-12-18', duration: '6 hours', enrolled: 25, completed: 25, instructor: 'Priya Sharma' },
     { id: 3, title: 'Advanced Excel Skills', type: 'Optional', dept: 'All', date: '2024-12-20', duration: '8 hours', enrolled: 78, completed: 45, instructor: 'Sneha Gupta' },
     { id: 4, title: 'Leadership Workshop', type: 'Optional', dept: 'Management', date: '2024-12-22', duration: '12 hours', enrolled: 15, completed: 8, instructor: 'Amit Patel' },
     { id: 5, title: 'Technical Documentation', type: 'Mandatory', dept: 'Engineering', date: '2024-12-25', duration: '5 hours', enrolled: 32, completed: 18, instructor: 'Rohit Verma' }
-  ];
+  ]);
 
   const filteredTrainings = trainings.filter(training => {
     const matchesSearch = searchQuery === '' || training.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -442,9 +500,24 @@ export const AdminTrainingPage = () => {
   const totalEnrolled = trainings.reduce((sum, t) => sum + t.enrolled, 0);
   const totalCompleted = trainings.reduce((sum, t) => sum + t.completed, 0);
 
+  const handleCreate = async () => {
+    if (!newTitle.trim() || !newInstructor.trim() || !newDate) return;
+    setIsSaving(true);
+    try {
+      await createTraining({ title: newTitle.trim(), type: newType, dept: newDept, instructor: newInstructor.trim(), date: newDate, duration: newDuration || 'TBD' });
+      setTrainings(prev => [{ id: Date.now(), title: newTitle.trim(), type: newType, dept: newDept, date: newDate, duration: newDuration || 'TBD', enrolled: 0, completed: 0, instructor: newInstructor.trim() }, ...prev]);
+      setShowModal(false);
+      setNewTitle(''); setNewInstructor(''); setNewDate(''); setNewDuration('');
+      setNewType('Mandatory'); setNewDept('All');
+    } catch {
+      alert('Failed to create training. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
       <div className="bg-gradient-to-br from-[#042A5B] via-[#063A75] to-[#0B4DA2] rounded-[30px] p-8 text-white shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -454,14 +527,12 @@ export const AdminTrainingPage = () => {
               <p className="text-blue-100">Organize and track employee training programs</p>
             </div>
           </div>
-          <button className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
-            <Plus size={18} />
-            Add Training
+          <button onClick={() => setShowModal(true)} className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+            <Plus size={18} />Add Training
           </button>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
           <BookOpen size={24} className="text-[#0B4DA2] mb-2" />
@@ -480,47 +551,30 @@ export const AdminTrainingPage = () => {
         </div>
       </div>
 
-      {/* Search and Filter */}
       <div className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2 flex-1">
             <Search size={18} className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search trainings..."
-              value={searchQuery}
+            <input type="text" placeholder="Search trainings..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm ml-2 w-full"
-            />
+              className="bg-transparent border-none outline-none text-sm ml-2 w-full" />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setFilterType('all')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'all' ? 'bg-[#0B4DA2] text-white' : 'bg-gray-100 text-gray-600'}`}>
-              All
-            </button>
-            <button onClick={() => setFilterType('Mandatory')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'Mandatory' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-              Mandatory
-            </button>
-            <button onClick={() => setFilterType('Optional')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'Optional' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-              Optional
-            </button>
+            <button onClick={() => setFilterType('all')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'all' ? 'bg-[#0B4DA2] text-white' : 'bg-gray-100 text-gray-600'}`}>All</button>
+            <button onClick={() => setFilterType('Mandatory')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'Mandatory' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Mandatory</button>
+            <button onClick={() => setFilterType('Optional')} className={`px-4 py-2 rounded-xl text-xs font-bold ${filterType === 'Optional' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Optional</button>
           </div>
         </div>
       </div>
 
-      {/* Training List */}
       <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Training Program</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Type</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Department</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Date</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Duration</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Enrolled</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Progress</th>
-                <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase">Actions</th>
+                {['Training Program','Type','Department','Date','Duration','Enrolled','Progress','Actions'].map(h => (
+                  <th key={h} className="text-left p-4 text-xs font-bold text-gray-500 uppercase">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -535,27 +589,17 @@ export const AdminTrainingPage = () => {
                   <td className="p-4">
                     <span className={`text-xs font-bold px-3 py-1 rounded-full ${
                       training.type === 'Mandatory' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {training.type}
-                    </span>
+                    }`}>{training.type}</span>
                   </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-700">{training.dept}</span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-700">{training.date}</span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm text-gray-700">{training.duration}</span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm font-bold text-[#1B254B]">{training.enrolled}</span>
-                  </td>
+                  <td className="p-4 text-sm text-gray-700">{training.dept}</td>
+                  <td className="p-4 text-sm text-gray-700">{training.date}</td>
+                  <td className="p-4 text-sm text-gray-700">{training.duration}</td>
+                  <td className="p-4 text-sm font-bold text-[#1B254B]">{training.enrolled}</td>
                   <td className="p-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-green-500 h-full" style={{ width: `${(training.completed / training.enrolled) * 100}%` }}></div>
+                          <div className="bg-green-500 h-full" style={{ width: training.enrolled > 0 ? `${(training.completed / training.enrolled) * 100}%` : '0%' }} />
                         </div>
                       </div>
                       <p className="text-xs text-gray-500">{training.completed}/{training.enrolled} completed</p>
@@ -563,12 +607,8 @@ export const AdminTrainingPage = () => {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors" title="View">
-                        <Eye size={16} />
-                      </button>
-                      <button className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Edit">
-                        <Edit size={16} />
-                      </button>
+                      <button className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors" title="View"><Eye size={16} /></button>
+                      <button className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Edit"><Edit size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -577,6 +617,67 @@ export const AdminTrainingPage = () => {
           </table>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-[24px] max-w-xl w-full shadow-2xl animate-in slide-in-from-bottom-4">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-[#1B254B]">Add Training Program</h3>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Title <span className="text-red-500">*</span></label>
+                <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)}
+                  placeholder="Training program title..." className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#1B254B] mb-2">Type</label>
+                  <select value={newType} onChange={e => setNewType(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none">
+                    <option>Mandatory</option>
+                    <option>Optional</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#1B254B] mb-2">Department</label>
+                  <select value={newDept} onChange={e => setNewDept(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none">
+                    {['All','Production','Quality Control','Engineering','Sales & Marketing','Administration','R&D','HR','Finance','IT'].map(d => (
+                      <option key={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Instructor <span className="text-red-500">*</span></label>
+                <input type="text" value={newInstructor} onChange={e => setNewInstructor(e.target.value)}
+                  placeholder="Instructor name..." className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#1B254B] mb-2">Date <span className="text-red-500">*</span></label>
+                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#1B254B] mb-2">Duration</label>
+                  <input type="text" value={newDuration} onChange={e => setNewDuration(e.target.value)}
+                    placeholder="e.g. 4 hours" className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+              <button onClick={handleCreate} disabled={isSaving || !newTitle.trim() || !newInstructor.trim() || !newDate}
+                className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors disabled:opacity-60">
+                {isSaving ? 'Saving...' : 'Add Training'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -688,17 +789,42 @@ export const AdminAnalyticsPage = () => {
 // Announcements Management
 export const AdminAnnouncementsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newStatus, setNewStatus] = useState('Published');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const announcements = [
+  const [announcements, setAnnouncements] = useState([
     { id: 1, title: 'Holiday Announcement', content: 'Company will remain closed on Dec 25th for Christmas', date: '2024-12-10', author: 'Admin', status: 'Published' },
     { id: 2, title: 'New Policy Released', content: 'Updated Work from Home policy is now available', date: '2024-12-07', author: 'HR Team', status: 'Published' },
     { id: 3, title: 'Team Building Event', content: 'Annual team outing scheduled for Jan 15th', date: '2024-12-05', author: 'Admin', status: 'Draft' },
     { id: 4, title: 'System Maintenance', content: 'Portal will be under maintenance on Dec 20th', date: '2024-12-03', author: 'IT Team', status: 'Scheduled' }
-  ];
+  ]);
 
   const filteredAnnouncements = announcements.filter(a =>
     searchQuery === '' || a.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleCreate = async () => {
+    if (!newTitle.trim() || !newContent.trim()) return;
+    setIsSaving(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await createAnnouncement({ title: newTitle.trim(), content: newContent.trim(), status: newStatus, isActive: newStatus === 'Published' });
+      setAnnouncements(prev => [{ id: Date.now(), title: newTitle.trim(), content: newContent.trim(), date: today, author: 'Admin', status: newStatus }, ...prev]);
+      setShowModal(false);
+      setNewTitle('');
+      setNewContent('');
+      setNewStatus('Published');
+    } catch (err) {
+      alert('Failed to save announcement. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = (id) => setAnnouncements(prev => prev.filter(a => a.id !== id));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -711,9 +837,8 @@ export const AdminAnnouncementsPage = () => {
               <p className="text-blue-100">Create and manage company-wide announcements</p>
             </div>
           </div>
-          <button className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
-            <Plus size={18} />
-            New Announcement
+          <button onClick={() => setShowModal(true)} className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+            <Plus size={18} />New Announcement
           </button>
         </div>
       </div>
@@ -721,13 +846,9 @@ export const AdminAnnouncementsPage = () => {
       <div className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100">
         <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2">
           <Search size={18} className="text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search announcements..."
-            value={searchQuery}
+          <input type="text" placeholder="Search announcements..." value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm ml-2 w-full"
-          />
+            className="bg-transparent border-none outline-none text-sm ml-2 w-full" />
         </div>
       </div>
 
@@ -739,13 +860,11 @@ export const AdminAnnouncementsPage = () => {
                 <h3 className="font-bold text-[#1B254B] mb-1">{announcement.title}</h3>
                 <p className="text-sm text-gray-600">{announcement.content}</p>
               </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+              <span className={`text-xs font-bold px-3 py-1 rounded-full ml-4 ${
                 announcement.status === 'Published' ? 'bg-green-100 text-green-700' :
                 announcement.status === 'Draft' ? 'bg-gray-100 text-gray-700' :
                 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {announcement.status}
-              </span>
+              }`}>{announcement.status}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -755,12 +874,52 @@ export const AdminAnnouncementsPage = () => {
               <div className="flex gap-2">
                 <button className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors"><Eye size={14} /></button>
                 <button className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"><Edit size={14} /></button>
-                <button className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"><Trash2 size={14} /></button>
+                <button onClick={() => handleDelete(announcement.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"><Trash2 size={14} /></button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-[24px] max-w-xl w-full shadow-2xl animate-in slide-in-from-bottom-4">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-[#1B254B]">New Announcement</h3>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Title <span className="text-red-500">*</span></label>
+                <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)}
+                  placeholder="Enter announcement title..." className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] focus:ring-2 focus:ring-blue-100 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Content <span className="text-red-500">*</span></label>
+                <textarea value={newContent} onChange={e => setNewContent(e.target.value)}
+                  placeholder="Enter announcement content..." rows={4}
+                  className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:border-[#0B4DA2] focus:ring-2 focus:ring-blue-100 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Status</label>
+                <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#0B4DA2] outline-none">
+                  <option>Published</option>
+                  <option>Draft</option>
+                  <option>Scheduled</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+              <button onClick={handleCreate} disabled={isSaving || !newTitle.trim() || !newContent.trim()}
+                className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors disabled:opacity-60">
+                {isSaving ? 'Saving...' : 'Post Announcement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -876,35 +1035,124 @@ export const AdminProductionPage = () => {
 
 // Payroll Administration
 export const AdminPayrollPage = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const payrollRecords = [
+    { id: 1, name: 'Rajesh Kumar', empId: 'EMP1001', dept: 'Production', basic: 45000, hra: 18000, allowances: 12000, deductions: 5500, net: 69500, status: 'Paid', month: 'December 2024' },
+    { id: 2, name: 'Priya Sharma', empId: 'EMP1025', dept: 'Quality Control', basic: 55000, hra: 22000, allowances: 15000, deductions: 7200, net: 84800, status: 'Paid', month: 'December 2024' },
+    { id: 3, name: 'Amit Patel', empId: 'EMP1089', dept: 'Engineering', basic: 75000, hra: 30000, allowances: 20000, deductions: 9800, net: 115200, status: 'Pending', month: 'December 2024' },
+    { id: 4, name: 'Sneha Gupta', empId: 'EMP1156', dept: 'Sales & Marketing', basic: 60000, hra: 24000, allowances: 18000, deductions: 8200, net: 93800, status: 'Paid', month: 'December 2024' },
+    { id: 5, name: 'Vikram Singh', empId: 'EMP1234', dept: 'R&D', basic: 80000, hra: 32000, allowances: 22000, deductions: 11500, net: 122500, status: 'Pending', month: 'December 2024' },
+  ];
+
+  const filtered = payrollRecords.filter(r => {
+    const matchSearch = searchQuery === '' || r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.empId.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const totalNet = payrollRecords.reduce((s, r) => s + r.net, 0);
+  const paidCount = payrollRecords.filter(r => r.status === 'Paid').length;
+  const pendingCount = payrollRecords.filter(r => r.status === 'Pending').length;
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-gradient-to-br from-[#042A5B] via-[#063A75] to-[#0B4DA2] rounded-[30px] p-8 text-white shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="bg-white/10 p-4 rounded-2xl"><IndianRupee size={32} /></div>
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Payroll Administration</h1>
-            <p className="text-blue-100">Manage employee payroll and compensation</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/10 p-4 rounded-2xl"><IndianRupee size={32} /></div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Payroll Administration</h1>
+              <p className="text-blue-100">Manage employee payroll and compensation — December 2024</p>
+            </div>
+          </div>
+          <button className="bg-white text-[#0B4DA2] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+            <Download size={18} />Export Payroll
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
+          <IndianRupee size={24} className="text-[#0B4DA2] mb-2" />
+          <p className="text-xl font-bold text-[#1B254B]">₹{(totalNet/100000).toFixed(1)}L</p>
+          <p className="text-xs text-gray-500">Total Net Payout</p>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
+          <CheckCircle size={24} className="text-green-600 mb-2" />
+          <p className="text-xl font-bold text-green-600">{paidCount}</p>
+          <p className="text-xs text-gray-500">Salaries Paid</p>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
+          <Clock size={24} className="text-yellow-600 mb-2" />
+          <p className="text-xl font-bold text-yellow-600">{pendingCount}</p>
+          <p className="text-xs text-gray-500">Pending</p>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
+          <Calendar size={24} className="text-purple-600 mb-2" />
+          <p className="text-xl font-bold text-[#1B254B]">28 Dec</p>
+          <p className="text-xs text-gray-500">Next Payout Date</p>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-[24px] shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2 flex-1">
+            <Search size={18} className="text-gray-400" />
+            <input type="text" placeholder="Search employees..." value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none text-sm ml-2 w-full" />
+          </div>
+          <div className="flex gap-2">
+            {['all','Paid','Pending'].map(s => (
+              <button key={s} onClick={() => setFilterStatus(s)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  filterStatus === s ? 'bg-[#0B4DA2] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}>{s === 'all' ? 'All' : s}</button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
-          <p className="text-2xl font-bold text-[#1B254B]">₹1,24,75,000</p>
-          <p className="text-xs text-gray-600">Total Monthly Payroll</p>
+      <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                {['Employee','Dept','Basic','HRA','Allowances','Deductions','Net Salary','Status','Action'].map(h => (
+                  <th key={h} className="text-left p-4 text-xs font-bold text-gray-500 uppercase">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                  <td className="p-4">
+                    <p className="text-sm font-bold text-[#1B254B]">{r.name}</p>
+                    <p className="text-xs text-gray-400">{r.empId}</p>
+                  </td>
+                  <td className="p-4 text-sm text-gray-700">{r.dept}</td>
+                  <td className="p-4 text-sm text-gray-700">₹{r.basic.toLocaleString('en-IN')}</td>
+                  <td className="p-4 text-sm text-gray-700">₹{r.hra.toLocaleString('en-IN')}</td>
+                  <td className="p-4 text-sm text-gray-700">₹{r.allowances.toLocaleString('en-IN')}</td>
+                  <td className="p-4 text-sm text-red-600">-₹{r.deductions.toLocaleString('en-IN')}</td>
+                  <td className="p-4"><span className="text-sm font-bold text-green-600">₹{r.net.toLocaleString('en-IN')}</span></td>
+                  <td className="p-4">
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      r.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>{r.status}</span>
+                  </td>
+                  <td className="p-4">
+                    <button className="p-2 bg-blue-50 text-[#0B4DA2] rounded-lg hover:bg-blue-100 transition-colors" title="Download Payslip">
+                      <Download size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
-          <p className="text-2xl font-bold text-[#1B254B]">1,247</p>
-          <p className="text-xs text-gray-600">Employees on Payroll</p>
-        </div>
-        <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
-          <p className="text-2xl font-bold text-[#1B254B]">28th Dec</p>
-          <p className="text-xs text-gray-600">Next Payout Date</p>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
-        <p className="text-sm text-gray-600">Process payroll, manage salary structures, generate payslips, and handle tax calculations.</p>
       </div>
     </div>
   );

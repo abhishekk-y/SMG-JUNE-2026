@@ -408,4 +408,8 @@ export const parseResume = (formData: FormData) =>
 export const triggerGlobalNotification = (module: string, message: string, type: string = 'info') =>
     apiFetch('/notifications/global', { method: 'POST', body: JSON.stringify({ module, message, type }) });
 
+// Broadcast notification to employees (admin action)
+export const broadcastNotification = (data: { title: string; message: string; audience: string; department?: string; type?: string }) =>
+    apiFetch('/notifications/broadcast', { method: 'POST', body: JSON.stringify(data) });
+
 

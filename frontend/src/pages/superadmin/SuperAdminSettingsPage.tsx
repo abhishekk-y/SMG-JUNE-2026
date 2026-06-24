@@ -151,7 +151,8 @@ export const SuperAdminSettingsPage = () => {
             >
               <Save size={16} /> {saving ? 'Saving...' : 'Save Settings'}
             </button>
-            <button className="bg-gray-100 text-[#1B254B] px-5 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+            <button className="bg-gray-100 text-[#1B254B] px-5 py-2.5 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              onClick={() => alert('Catalog Manager: Service catalogs (Canteen, Transport, Uniform, SIM, Welfare) are managed through their respective Department Portals. Navigate to the department portal to add/edit/remove catalog items.')}>
               Open Catalog Manager
             </button>
           </div>

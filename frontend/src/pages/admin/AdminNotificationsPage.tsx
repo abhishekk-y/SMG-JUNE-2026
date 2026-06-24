@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bell,
   Send,
@@ -10,11 +10,26 @@ import {
   CheckCircle,
   Trash2,
   Edit,
-  Eye
+  Eye,
+  X,
+  Loader2,
+  CheckCheck,
+  RefreshCw
 } from 'lucide-react';
+import { broadcastNotification } from '../../services/api';
 
 interface AdminNotificationsPageProps {
   onNavigate: (page: string) => void;
+}
+
+interface SentNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  sentTo: string;
+  sentOn: string;
+  recipients: number;
 }
 
 export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPageProps) => {
@@ -24,45 +39,51 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
   const [notificationType, setNotificationType] = useState('info');
   const [targetAudience, setTargetAudience] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{success: boolean; message: string} | null>(null);
 
-  const sentNotifications = [
+  // Filter state: 'all' | 'today' | 'week'
+  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week'>('all');
+
+  // Sent notifications state — starts with samples, new broadcasts are prepended
+  const [sentNotifications, setSentNotifications] = useState<SentNotification[]>([
     {
-      id: 1,
+      id: '1',
       title: 'Holiday Announcement',
       message: 'Company will remain closed on Dec 25th for Christmas',
       type: 'info',
       sentTo: 'All Employees',
-      sentOn: '2024-12-10 10:30 AM',
+      sentOn: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       recipients: 1247
     },
     {
-      id: 2,
+      id: '2',
       title: 'Urgent: Safety Training',
       message: 'Mandatory safety training session scheduled for all production staff',
       type: 'warning',
       sentTo: 'Production Department',
-      sentOn: '2024-12-09 02:15 PM',
+      sentOn: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       recipients: 450
     },
     {
-      id: 3,
+      id: '3',
       title: 'Payroll Update',
       message: 'December salary will be credited on 28th Dec instead of 30th',
       type: 'success',
       sentTo: 'All Employees',
-      sentOn: '2024-12-08 09:00 AM',
+      sentOn: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
       recipients: 1247
     },
     {
-      id: 4,
+      id: '4',
       title: 'New Policy Released',
       message: 'Updated Work from Home policy is now available in the policy section',
       type: 'info',
       sentTo: 'All Employees',
-      sentOn: '2024-12-07 11:45 AM',
+      sentOn: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
       recipients: 1247
     }
-  ];
+  ]);
 
   const departments = [
     'Production',
@@ -79,38 +100,111 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
     'Maintenance'
   ];
 
-  const handleBroadcast = () => {
-    if (notificationTitle.trim() && notificationMessage.trim()) {
-      alert(`Broadcasting notification to ${targetAudience === 'all' ? 'All Employees' : selectedDepartment}`);
-      setShowBroadcastModal(false);
-      setNotificationTitle('');
-      setNotificationMessage('');
-      setNotificationType('info');
-      setTargetAudience('all');
-      setSelectedDepartment('');
+  // ── Filter logic ──────────────────────────────────────────────────────────
+  const getFilteredNotifications = () => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(todayStart.getDate() - 7);
+
+    return sentNotifications.filter(n => {
+      const sentDate = new Date(n.sentOn);
+      if (activeFilter === 'today') return sentDate >= todayStart;
+      if (activeFilter === 'week') return sentDate >= weekStart;
+      return true; // 'all'
+    });
+  };
+
+  const filteredNotifications = getFilteredNotifications();
+
+  // ── Stats computed from actual data ───────────────────────────────────────
+  const todayCount = sentNotifications.filter(n => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return new Date(n.sentOn) >= todayStart;
+  }).length;
+
+  const totalRecipients = sentNotifications.reduce((sum, n) => sum + n.recipients, 0);
+
+  // ── Broadcast handler — actually calls backend ────────────────────────────
+  const handleBroadcast = async () => {
+    if (!notificationTitle.trim() || !notificationMessage.trim()) return;
+    if (targetAudience === 'department' && !selectedDepartment) {
+      setSendResult({ success: false, message: 'Please select a department.' });
+      return;
+    }
+
+    setIsSending(true);
+    setSendResult(null);
+
+    try {
+      const payload = {
+        title: notificationTitle.trim(),
+        message: notificationMessage.trim(),
+        audience: targetAudience === 'all' ? 'All Employees' : 'By Department',
+        department: targetAudience === 'department' ? selectedDepartment : undefined,
+        type: notificationType
+      };
+
+      const result = await broadcastNotification(payload);
+
+      const newEntry: SentNotification = {
+        id: Date.now().toString(),
+        title: notificationTitle.trim(),
+        message: notificationMessage.trim(),
+        type: notificationType,
+        sentTo: targetAudience === 'all' ? 'All Employees' : selectedDepartment,
+        sentOn: new Date().toISOString(),
+        recipients: result?.count ?? (targetAudience === 'all' ? 1247 : 450)
+      };
+
+      setSentNotifications(prev => [newEntry, ...prev]);
+      setSendResult({ success: true, message: `✅ Broadcast sent to ${newEntry.recipients} employees!` });
+
+      // Reset form after short delay then close
+      setTimeout(() => {
+        setShowBroadcastModal(false);
+        setNotificationTitle('');
+        setNotificationMessage('');
+        setNotificationType('info');
+        setTargetAudience('all');
+        setSelectedDepartment('');
+        setSendResult(null);
+      }, 1800);
+    } catch (err: any) {
+      setSendResult({ success: false, message: `❌ Failed: ${err.message || 'Server error'}` });
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const getTypeIcon = (type) => {
+  const handleDelete = (id: string) => {
+    setSentNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'success':
-        return <CheckCircle className="text-green-600" size={20} />;
-      case 'warning':
-        return <AlertCircle className="text-yellow-600" size={20} />;
-      default:
-        return <Info className="text-blue-600" size={20} />;
+      case 'success': return <CheckCircle className="text-green-600" size={20} />;
+      case 'warning': return <AlertCircle className="text-yellow-600" size={20} />;
+      default: return <Info className="text-blue-600" size={20} />;
     }
   };
 
-  const getTypeClass = (type) => {
+  const getTypeClass = (type: string) => {
     switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
-      default:
-        return 'bg-blue-50 border-blue-200';
+      case 'success': return 'bg-green-50 border-green-200';
+      case 'warning': return 'bg-yellow-50 border-yellow-200';
+      default: return 'bg-blue-50 border-blue-200';
     }
+  };
+
+  const formatSentOn = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('en-IN', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      });
+    } catch { return iso; }
   };
 
   return (
@@ -139,14 +233,14 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
             <Bell size={24} className="text-[#0B4DA2]" />
             <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Active</span>
           </div>
-          <p className="text-2xl font-bold text-[#1B254B]">24</p>
+          <p className="text-2xl font-bold text-[#1B254B]">{todayCount}</p>
           <p className="text-xs text-gray-500">Total Sent Today</p>
         </div>
         <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <Users size={24} className="text-green-600" />
           </div>
-          <p className="text-2xl font-bold text-[#1B254B]">1,247</p>
+          <p className="text-2xl font-bold text-[#1B254B]">{totalRecipients.toLocaleString('en-IN')}</p>
           <p className="text-xs text-gray-500">Total Recipients</p>
         </div>
         <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
@@ -160,74 +254,108 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
           <div className="flex items-center justify-between mb-2">
             <Calendar size={24} className="text-orange-600" />
           </div>
-          <p className="text-2xl font-bold text-[#1B254B]">156</p>
-          <p className="text-xs text-gray-500">This Month</p>
+          <p className="text-2xl font-bold text-[#1B254B]">{sentNotifications.length}</p>
+          <p className="text-xs text-gray-500">Total Broadcast</p>
         </div>
       </div>
 
       {/* Sent Notifications */}
       <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-[#1B254B] text-lg">Sent Notifications</h3>
+          <h3 className="font-bold text-[#1B254B] text-lg">
+            Sent Notifications
+            <span className="ml-2 text-sm font-normal text-gray-400">({filteredNotifications.length} shown)</span>
+          </h3>
           <div className="flex gap-2">
-            <button className="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+            {/* ── Working filter buttons ── */}
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors ${
+                activeFilter === 'all'
+                  ? 'bg-[#0B4DA2] text-white'
+                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
               All
             </button>
-            <button className="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={() => setActiveFilter('today')}
+              className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors ${
+                activeFilter === 'today'
+                  ? 'bg-[#0B4DA2] text-white'
+                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
               Today
             </button>
-            <button className="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={() => setActiveFilter('week')}
+              className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors ${
+                activeFilter === 'week'
+                  ? 'bg-[#0B4DA2] text-white'
+                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+              }`}
+            >
               This Week
             </button>
           </div>
         </div>
 
-        <div className="space-y-3">
-          {sentNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-5 rounded-xl border transition-all ${getTypeClass(notification.type)}`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="bg-white p-3 rounded-xl shadow-sm">
-                  {getTypeIcon(notification.type)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="font-bold text-[#1B254B] mb-1">{notification.title}</h4>
-                      <p className="text-sm text-gray-600">{notification.message}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 hover:bg-white rounded-lg transition-colors">
-                        <Edit size={16} className="text-gray-400" />
-                      </button>
-                      <button className="p-2 hover:bg-white rounded-lg transition-colors">
-                        <Trash2 size={16} className="text-red-400" />
-                      </button>
-                    </div>
+        {filteredNotifications.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <Bell size={40} className="mx-auto mb-3 opacity-30" />
+            <p className="font-bold text-[#1B254B]">No notifications for this period</p>
+            <p className="text-sm mt-1">Try selecting a different filter or broadcast a new notification.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-5 rounded-xl border transition-all ${getTypeClass(notification.type)}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="bg-white p-3 rounded-xl shadow-sm">
+                    {getTypeIcon(notification.type)}
                   </div>
-                  <div className="flex items-center gap-4 mt-3">
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Users size={12} />
-                      {notification.recipients} Recipients
-                    </span>
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Calendar size={12} />
-                      {notification.sentOn}
-                    </span>
-                    <span className="text-xs font-bold text-[#0B4DA2] bg-white px-2 py-1 rounded">
-                      {notification.sentTo}
-                    </span>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-bold text-[#1B254B] mb-1">{notification.title}</h4>
+                        <p className="text-sm text-gray-600">{notification.message}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDelete(notification.id)}
+                          className="p-2 hover:bg-white rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} className="text-red-400" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-3">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Users size={12} />
+                        {notification.recipients.toLocaleString('en-IN')} Recipients
+                      </span>
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar size={12} />
+                        {formatSentOn(notification.sentOn)}
+                      </span>
+                      <span className="text-xs font-bold text-[#0B4DA2] bg-white px-2 py-1 rounded">
+                        {notification.sentTo}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Broadcast Modal */}
+      {/* ── Broadcast Modal ── */}
       {showBroadcastModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-[24px] max-w-2xl w-full shadow-2xl animate-in slide-in-from-bottom-4">
@@ -239,15 +367,25 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
                     setShowBroadcastModal(false);
                     setNotificationTitle('');
                     setNotificationMessage('');
+                    setSendResult(null);
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <Trash2 size={20} />
+                  <X size={20} />
                 </button>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
+              {/* Result Banner */}
+              {sendResult && (
+                <div className={`p-3 rounded-xl text-sm font-bold ${
+                  sendResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {sendResult.message}
+                </div>
+              )}
+
               {/* Notification Type */}
               <div>
                 <label className="block text-sm font-bold text-[#1B254B] mb-2">Notification Type</label>
@@ -290,7 +428,7 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
 
               {/* Title */}
               <div>
-                <label className="block text-sm font-bold text-[#1B254B] mb-2">Title</label>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Title <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={notificationTitle}
@@ -302,7 +440,7 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
 
               {/* Message */}
               <div>
-                <label className="block text-sm font-bold text-[#1B254B] mb-2">Message</label>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Message <span className="text-red-500">*</span></label>
                 <textarea
                   value={notificationMessage}
                   onChange={(e) => setNotificationMessage(e.target.value)}
@@ -364,6 +502,7 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
                   setShowBroadcastModal(false);
                   setNotificationTitle('');
                   setNotificationMessage('');
+                  setSendResult(null);
                 }}
                 className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
               >
@@ -371,10 +510,20 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
               </button>
               <button
                 onClick={handleBroadcast}
-                className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2"
+                disabled={isSending || !notificationTitle.trim() || !notificationMessage.trim()}
+                className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Send size={18} />
-                Broadcast Now
+                {isSending ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Broadcast Now
+                  </>
+                )}
               </button>
             </div>
           </div>

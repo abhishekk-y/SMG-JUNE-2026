@@ -11,6 +11,20 @@ export const SuperAdminAnnouncementsPage = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState<{ id?: string; title?: string; audience?: string; date?: string }>({ audience: 'All Employees', date: new Date().toISOString().slice(0, 10) });
   const [addError, setAddError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const openEdit = (a: any) => {
+    setEditingId(a.id);
+    setAddForm({ id: a.id, title: a.title, audience: a.audience, date: a.date });
+    setAddError(null);
+    setAddOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Delete this announcement?')) {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+    }
+  };
 
   const nextAnnId = useMemo(() => {
     const nums = announcements
@@ -27,18 +41,19 @@ export const SuperAdminAnnouncementsPage = () => {
       setAddError('Please enter a title.');
       return;
     }
-    const id = (addForm.id as string) || nextAnnId;
-    if (announcements.some(a => a.id.toLowerCase() === id.toLowerCase())) {
-      setAddError('Announcement ID already exists.');
-      return;
+    if (editingId) {
+      // Update existing
+      setAnnouncements(prev => prev.map(a => a.id === editingId ? { ...a, title: addForm.title!.trim(), audience: addForm.audience || 'All Employees', date: addForm.date || a.date } : a));
+      setEditingId(null);
+    } else {
+      const id = (addForm.id as string) || nextAnnId;
+      if (announcements.some(a => a.id.toLowerCase() === id.toLowerCase())) {
+        setAddError('Announcement ID already exists.');
+        return;
+      }
+      const ann = { id, title: addForm.title.trim(), audience: addForm.audience || 'All Employees', date: addForm.date || new Date().toISOString().slice(0, 10) };
+      setAnnouncements(prev => [ann, ...prev]);
     }
-    const ann = {
-      id,
-      title: addForm.title.trim(),
-      audience: addForm.audience || 'All Employees',
-      date: addForm.date || new Date().toISOString().slice(0, 10),
-    };
-    setAnnouncements(prev => [ann, ...prev]);
     setAddForm({ audience: 'All Employees', date: new Date().toISOString().slice(0, 10) });
     setAddOpen(false);
   };
@@ -73,7 +88,7 @@ export const SuperAdminAnnouncementsPage = () => {
                 <td className="px-6 py-3 text-sm text-[#1B254B]">{a.title}</td>
                 <td className="px-6 py-3 text-sm">{a.audience}</td>
                 <td className="px-6 py-3 text-sm">{a.date}</td>
-                <td className="px-6 py-3 text-sm"><button className="text-[#0B4DA2] font-bold text-xs hover:underline mr-3">Edit</button><button className="text-[#EE5D50] font-bold text-xs hover:underline">Delete</button></td>
+                <td className="px-6 py-3 text-sm"><button onClick={() => openEdit(a)} className="text-[#0B4DA2] font-bold text-xs hover:underline mr-3">Edit</button><button onClick={() => handleDelete(a.id)} className="text-[#EE5D50] font-bold text-xs hover:underline">Delete</button></td>
               </tr>
             ))}
           </tbody>
