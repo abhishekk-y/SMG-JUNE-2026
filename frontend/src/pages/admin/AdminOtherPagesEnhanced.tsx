@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generatePDF } from '../../utils/pdfExport';
 import {
   Users,
   Calendar,
@@ -182,9 +183,37 @@ export const AdminUsersPage = () => {
     return matchesSearch && matchesDept;
   });
 
-  const handleViewFullDetails = (user) => {
+  const handleViewFullDetails = (user: any) => {
     setSelectedUser(user);
     setShowFullDetails(true);
+  };
+
+  const handleDownloadProfile = () => {
+    if (!selectedUser) return;
+    const content = `
+      <h1>Employee Profile: ${selectedUser.name}</h1>
+      <table>
+        <tr><th>Employee ID</th><td>${selectedUser.empId}</td></tr>
+        <tr><th>Department</th><td>${selectedUser.dept}</td></tr>
+        <tr><th>Role</th><td>${selectedUser.role}</td></tr>
+        <tr><th>Email</th><td>${selectedUser.email}</td></tr>
+        <tr><th>Phone</th><td>${selectedUser.phone}</td></tr>
+        <tr><th>Date of Joining</th><td>${selectedUser.joinDate}</td></tr>
+      </table>
+      <h2>Compensation Summary</h2>
+      <table>
+        <tr><th>Basic</th><td>${selectedUser.salary?.basic || 'N/A'}</td></tr>
+        <tr><th>HRA</th><td>${selectedUser.salary?.hra || 'N/A'}</td></tr>
+        <tr><th>Allowances</th><td>${selectedUser.salary?.allowances || 'N/A'}</td></tr>
+        <tr><th>Total</th><td>${selectedUser.salary?.total || 'N/A'}</td></tr>
+      </table>
+      <h2>Attendance & Performance</h2>
+      <table>
+        <tr><th>Attendance</th><td>${selectedUser.attendance?.percentage || 'N/A'}%</td></tr>
+        <tr><th>Performance Rating</th><td>${selectedUser.performance?.rating || 'N/A'} / 5.0</td></tr>
+      </table>
+    `;
+    generatePDF(content, \`Profile_${selectedUser.empId}.pdf\`);
   };
 
   return (
@@ -587,11 +616,11 @@ export const AdminUsersPage = () => {
 
             {/* Footer Actions */}
             <div className="sticky bottom-0 bg-gray-50 p-6 border-t border-gray-200 rounded-b-[28px] flex gap-3">
-              <button className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => alert('Full Employee Record editing requires HR Master Admin privileges (Available in v2.0)')} className="flex-1 bg-[#0B4DA2] text-white py-3 rounded-xl font-bold hover:bg-[#042A5B] transition-colors flex items-center justify-center gap-2">
                 <Edit size={18} />
                 Edit Employee
               </button>
-              <button className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+              <button onClick={handleDownloadProfile} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                 <Download size={18} />
                 Download Profile
               </button>

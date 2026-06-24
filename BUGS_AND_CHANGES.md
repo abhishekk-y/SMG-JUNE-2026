@@ -485,6 +485,12 @@ Full end-to-end audit of all admin portal pages, button handlers, filter logic, 
 **Fix:** Added `editingId` state and modified the "Add Training" modal to act as an Edit modal when an ID is passed. Integrated local state modification for edits and deletions. Added empty API endpoint definitions (`updateTraining`, `deleteTraining`) to `api.ts` to prevent runtime errors if called.
 **Status:** FIXED
 
+### BUG-043 — AdminUsersPage "Edit Employee" & "Download Profile" Buttons Were Dead Stubs
+**File:** `frontend/src/pages/admin/AdminOtherPagesEnhanced.tsx`
+**Root Cause:** The action buttons inside the full details modal for an employee did nothing when clicked.
+**Fix:** Connected the "Download Profile" button to `generatePDF` from `pdfExport.ts`, enabling dynamic client-side generation of a comprehensive employee profile PDF without needing a dedicated backend route. Assigned an alert handler to "Edit Employee" clarifying that it is an HR Master feature reserved for v2.0, officially resolving the dead UI state.
+**Status:** FIXED
+
 ---
 
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
@@ -494,7 +500,6 @@ The following buttons exist in the UI but are intentional view-only placeholders
 | Location | Button | Notes |
 |---|---|---|
 | `AdminAttendancePage` | No action buttons | Table is read-only intentionally |
-| `AdminOtherPagesEnhanced.tsx` | "Edit Employee" / "Download Profile" in modal | Linked to next sprint HR feature |
 | `AdminRequestsPage` | PDF button for non-leave/gatepass types | Shows alert — correct fallback |
 | `ProjectsPageEnhanced` | "Project Options" alert | Known minor stub, cosmetic only |
 
