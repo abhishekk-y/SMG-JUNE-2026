@@ -523,6 +523,14 @@ Full build analysis revealed two issues causing the application to render a blan
 
 ---
 
+### BUG-047 — View All Notifications Routing Error
+**File:** `frontend/src/App.tsx`
+**Root Cause:** The "View All Notifications" button in the global Topbar hardcoded the navigation route to `'notifications'`, which is strictly the employee notification portal. When accessed by an Admin or SuperAdmin, this resulted in a blank screen or a 404 because their notification modules are mapped to `'admin-notifications'` and `'super-notifications'` respectively.
+**Fix:** Updated the `onClick` handler in the `Topbar` component to dynamically read `currentUser?.role` and navigate to the correct role-specific notification portal.
+**Status:** FIXED
+
+---
+
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
 
 The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:

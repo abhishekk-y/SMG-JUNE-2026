@@ -272,7 +272,10 @@ const Topbar = ({ onMobileMenu, onNavigate }) => {
                   <button
                     onClick={() => {
                       setShowNotificationPopup(false);
-                      onNavigate('notifications');
+                      const role = currentUser?.role?.toLowerCase();
+                      if (role === 'admin') onNavigate('admin-notifications');
+                      else if (role === 'superadmin') onNavigate('super-notifications');
+                      else onNavigate('notifications');
                     }}
                     className="w-full text-center text-sm font-bold text-[#0B4DA2] hover:bg-blue-50 py-2 rounded-lg transition-colors"
                   >
