@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { createAnnouncement, createTraining, updateTraining, deleteTraining } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { createAnnouncement, createTraining, updateTraining, deleteTraining, getAnnouncements } from '../../services/api';
 import {
   Users,
   Calendar,
@@ -483,13 +483,32 @@ export const AdminTrainingPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const [trainings, setTrainings] = useState([
-    { id: 1, title: 'Safety Training Program', type: 'Mandatory', dept: 'Production', date: '2024-12-15', duration: '4 hours', enrolled: 45, completed: 12, instructor: 'Vikram Singh' },
-    { id: 2, title: 'Quality Control Standards', type: 'Mandatory', dept: 'Quality Control', date: '2024-12-18', duration: '6 hours', enrolled: 25, completed: 25, instructor: 'Priya Sharma' },
-    { id: 3, title: 'Advanced Excel Skills', type: 'Optional', dept: 'All', date: '2024-12-20', duration: '8 hours', enrolled: 78, completed: 45, instructor: 'Sneha Gupta' },
-    { id: 4, title: 'Leadership Workshop', type: 'Optional', dept: 'Management', date: '2024-12-22', duration: '12 hours', enrolled: 15, completed: 8, instructor: 'Amit Patel' },
-    { id: 5, title: 'Technical Documentation', type: 'Mandatory', dept: 'Engineering', date: '2024-12-25', duration: '5 hours', enrolled: 32, completed: 18, instructor: 'Rohit Verma' }
-  ]);
+  const [trainings, setTrainings] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchTrainings = async () => {
+      try {
+        const { getTrainings } = await import('../../services/api');
+        const data = await getTrainings();
+        if (Array.isArray(data)) {
+          setTrainings(data.map((t: any) => ({
+            id: t._id,
+            title: t.title,
+            type: t.type || 'Mandatory',
+            dept: t.department || 'All',
+            date: t.date?.split('T')[0] || '',
+            duration: t.duration || '',
+            enrolled: t.enrolledUsers?.length || 0,
+            completed: t.completedUsers?.length || 0,
+            instructor: t.instructor || 'TBD'
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch trainings:', err);
+      }
+    };
+    fetchTrainings();
+  }, []);
 
   const filteredTrainings = trainings.filter(training => {
     const matchesSearch = searchQuery === '' || training.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -827,12 +846,29 @@ export const AdminAnnouncementsPage = () => {
   const [newStatus, setNewStatus] = useState('Published');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [announcements, setAnnouncements] = useState([
-    { id: 1, title: 'Holiday Announcement', content: 'Company will remain closed on Dec 25th for Christmas', date: '2024-12-10', author: 'Admin', status: 'Published' },
-    { id: 2, title: 'New Policy Released', content: 'Updated Work from Home policy is now available', date: '2024-12-07', author: 'HR Team', status: 'Published' },
-    { id: 3, title: 'Team Building Event', content: 'Annual team outing scheduled for Jan 15th', date: '2024-12-05', author: 'Admin', status: 'Draft' },
-    { id: 4, title: 'System Maintenance', content: 'Portal will be under maintenance on Dec 20th', date: '2024-12-03', author: 'IT Team', status: 'Scheduled' }
-  ]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  // Fetch live announcements from backend on mount
+  useEffect(() => {
+    const loadAnnouncements = async () => {
+      try {
+        const data = await getAnnouncements();
+        if (Array.isArray(data)) {
+          setAnnouncements(data.map((a: any) => ({
+            id: a._id,
+            title: a.title,
+            content: a.content,
+            date: a.createdAt?.split('T')[0] || '',
+            author: a.postedBy?.name || 'Admin',
+            status: a.isActive !== false ? 'Published' : 'Draft'
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to load announcements:', err);
+      }
+    };
+    loadAnnouncements();
+  }, []);
 
   const filteredAnnouncements = announcements.filter(a =>
     searchQuery === '' || a.title.toLowerCase().includes(searchQuery.toLowerCase())

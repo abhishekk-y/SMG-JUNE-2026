@@ -1,12 +1,29 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Plus, Save, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../../components/ui/dialog';
+import { getAnnouncements } from '../../services/api';
 
 export const SuperAdminAnnouncementsPage = () => {
-  const [announcements, setAnnouncements] = useState([
-    { id: 'AN-01', title: 'Holiday Calendar 2026', date: '2025-12-15', audience: 'All Employees' },
-    { id: 'AN-02', title: 'New Safety Policy', date: '2025-12-10', audience: 'Production' },
-  ]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await getAnnouncements();
+        if (Array.isArray(data)) {
+          setAnnouncements(data.map((a: any) => ({
+            id: a._id,
+            title: a.title,
+            audience: a.audience || 'All Employees',
+            date: a.createdAt?.split('T')[0] || new Date().toISOString().slice(0, 10),
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch announcements:', err);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
 
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState<{ id?: string; title?: string; audience?: string; date?: string }>({ audience: 'All Employees', date: new Date().toISOString().slice(0, 10) });

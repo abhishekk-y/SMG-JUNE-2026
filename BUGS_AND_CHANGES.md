@@ -515,6 +515,14 @@ Full build analysis revealed two issues causing the application to render a blan
 
 ---
 
+### BUG-046 — Admin & Super Admin Announcements Not Synchronized with Backend
+**File:** `frontend/src/pages/admin/AdminOtherPages.tsx`, `frontend/src/pages/superadmin/SuperAdminAnnouncementsPage.tsx`
+**Root Cause:** The `AdminAnnouncementsPage` and `SuperAdminAnnouncementsPage` components initialized their state with hardcoded mock data. While the "Create Announcement" functionality successfully POSTed to the backend, the actual displayed lists were static and decoupled from MongoDB, causing a synchronization failure where the employee dashboard showed different announcements than the admin portals.
+**Fix:** Replaced the hardcoded state with a `useEffect` hook that fetches live data from the `/announcements` endpoint via `getAnnouncements()` on component mount, ensuring all portals display a consistent, synchronized source of truth.
+**Status:** FIXED
+
+---
+
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
 
 The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:
