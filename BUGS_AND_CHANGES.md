@@ -493,6 +493,28 @@ Full end-to-end audit of all admin portal pages, button handlers, filter logic, 
 
 ---
 
+## June 25, 2026 — Build-Breaking Syntax & Export Audit
+
+Full build analysis revealed two issues causing the application to render a blank white screen on startup.
+
+---
+
+### BUG-044 — Escaped Backticks in Template Literal Cause Vite SWC Syntax Error
+**File:** `frontend/src/pages/admin/AdminOtherPagesEnhanced.tsx:216`
+**Root Cause:** The `handleDownloadProfile` function contained `\`Profile_${selectedUser.empId}.pdf\`` — backslash-escaped backticks inside a regular code context (not inside another template literal). The SWC parser treated `\`` as the start of a unicode escape sequence, throwing `Expected unicode escape` and preventing the entire module from compiling.
+**Fix:** Replaced `\`...\`` with standard template literal backticks `` `...` ``.
+**Status:** FIXED
+
+---
+
+### BUG-045 — Duplicate `createTraining` & `createAnnouncement` Exports Crash Production Build
+**File:** `frontend/src/services/api.ts:418,422`
+**Root Cause:** `createTraining` was exported at both line 141 (TRAINING section) and line 418 (ADMIN TRAINING section). Similarly, `createAnnouncement` was exported at both line 165 and line 422. esbuild's production bundler enforces strict uniqueness on export names and rejected the build with 4 errors. Vite's dev server (SWC) was more lenient but the duplicate still caused runtime module resolution failures resulting in a blank white screen.
+**Fix:** Removed the duplicate `createTraining` and `createAnnouncement` declarations from the bottom of the file, keeping only the unique `updateTraining`, `deleteTraining`, `updateAnnouncement`, and `deleteAnnouncement` exports.
+**Status:** FIXED
+
+---
+
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
 
 The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:

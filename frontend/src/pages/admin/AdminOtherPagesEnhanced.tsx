@@ -213,7 +213,7 @@ export const AdminUsersPage = () => {
         <tr><th>Performance Rating</th><td>${selectedUser.performance?.rating || 'N/A'} / 5.0</td></tr>
       </table>
     `;
-    generatePDF(content, \`Profile_${selectedUser.empId}.pdf\`);
+    generatePDF(content, `Profile_${selectedUser.empId}.pdf`);
   };
 
   return (
