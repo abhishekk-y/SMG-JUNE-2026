@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Send } from 'lucide-react';
+import { Bell, Send, X } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 
 export const SuperAdminNotificationsPage = () => {
@@ -7,6 +7,8 @@ export const SuperAdminNotificationsPage = () => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [dept, setDept] = useState('');
+  const [attachmentBase64, setAttachmentBase64] = useState<string>('');
+  const [attachmentName, setAttachmentName] = useState<string>('');
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -43,13 +45,16 @@ export const SuperAdminNotificationsPage = () => {
           audience,
           title,
           message,
-          department: audience === 'By Department' ? dept : undefined
+          department: audience === 'By Department' ? dept : undefined,
+          attachment: attachmentBase64 || undefined
         })
       });
 
       setSuccessMsg(response.message || 'Notification broadcasted successfully!');
       setTitle('');
       setMessage('');
+      setAttachmentBase64('');
+      setAttachmentName('');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to send notification broadcast.');
     } finally {
@@ -126,6 +131,45 @@ export const SuperAdminNotificationsPage = () => {
             placeholder="Write your message"
             required
           />
+        </div>
+
+        {/* Attachment */}
+        <div>
+          <label className="text-sm text-gray-600 font-bold block mb-1">Attachment (Image/PDF)</label>
+          <div className="flex items-center gap-3">
+            <label className="cursor-pointer bg-[#F4F7FE] border border-gray-200 text-[#1B254B] px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors inline-block">
+              <span>Choose File</span>
+              <input 
+                type="file" 
+                accept="image/*,application/pdf"
+                className="hidden" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setAttachmentBase64(reader.result as string);
+                      setAttachmentName(file.name);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </label>
+            <span className="text-xs text-gray-500">
+              {attachmentName || 'Optional: Attach an image or PDF document.'}
+            </span>
+            {attachmentName && (
+              <button 
+                type="button"
+                onClick={() => { setAttachmentBase64(''); setAttachmentName(''); }}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="Remove Attachment"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         <button

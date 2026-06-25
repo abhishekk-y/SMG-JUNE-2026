@@ -544,9 +544,21 @@ router.put('/notifications/:id/read', async (req, res) => {
     try { res.json(await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true })); }
     catch (err) { res.status(500).json({ message: err.message }); }
 });
+router.delete('/notifications/clearAll/:userId', async (req, res) => {
+    try {
+        await Notification.deleteMany({ user: req.params.userId });
+        res.json({ message: 'All notifications cleared successfully.' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+router.put('/notifications/markAllRead/:userId', async (req, res) => {
+    try {
+        await Notification.updateMany({ user: req.params.userId }, { isRead: true });
+        res.json({ message: 'All notifications marked as read.' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
 router.post('/notifications/broadcast', async (req, res) => {
     try {
-        const { audience, title, message, department } = req.body;
+        const { audience, title, message, department, attachment } = req.body;
         let query = {};
         if (audience === 'Admins only') {
             query = { role: { $in: ['admin', 'superadmin'] } };
@@ -561,11 +573,41 @@ router.post('/notifications/broadcast', async (req, res) => {
             message,
             type: 'info',
             category: 'System',
-            isRead: false
+            isRead: false,
+            attachment: attachment || null
         }));
 
         await Notification.insertMany(notifications);
         res.status(201).json({ message: `Successfully broadcasted to ${users.length} users.` });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/notifications/stats/broadcast', async (req, res) => {
+    try {
+        const stats = await Notification.aggregate([
+            { $group: {
+                _id: { title: "$title", message: "$message" },
+                total: { $sum: 1 },
+                readCount: { $sum: { $cond: ["$isRead", 1, 0] } },
+                latestDate: { $max: "$createdAt" },
+                audience: { $first: "$category" }
+            }},
+            { $sort: { latestDate: -1 } },
+            { $limit: 20 }
+        ]);
+
+        const formattedStats = stats.map(s => ({
+            id: s._id.title + s.latestDate,
+            title: s._id.title,
+            message: s._id.message,
+            audience: 'Company Wide',
+            readRate: s.total > 0 ? `${Math.round((s.readCount / s.total) * 100)}%` : '0%',
+            readCount: s.readCount,
+            totalCount: s.total,
+            date: new Date(s.latestDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        }));
+
+        res.json(formattedStats);
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

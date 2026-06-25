@@ -195,6 +195,26 @@ export const AppProvider = ({ children }) => {
       })));
     })();
   }, []);
+
+  // Poll for notifications dynamically
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    const pollNotifications = async () => {
+      try {
+        const notif = await api.apiFetch(`/notifications/${userId}`);
+        if (notif) {
+          setNotifications(notif.map((n: any) => ({
+            id: n._id, title: n.title, message: n.message, type: n.type, time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '-', isRead: n.isRead, timestamp: new Date(n.createdAt)
+          })));
+        }
+      } catch (err) {
+        // Ignore errors during polling
+      }
+    };
+    const interval = setInterval(pollNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Attendance State
   const [isClockedIn, setIsClockedIn] = useState(false);

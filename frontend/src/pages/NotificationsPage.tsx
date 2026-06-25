@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X, Check, CheckCheck, Trash2, Filter, Clock, Calendar, AlertCircle, Info, CheckCircle, Loader2 } from 'lucide-react';
-import { getNotifications, markNotificationRead } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { getNotifications, markNotificationRead, clearAllNotifications, markAllNotificationsRead } from '../services/api';
+import { useApp } from '../context/AppContextEnhanced';
 
 export const NotificationsPage = () => {
-  const { user } = useAuth();
+  const { currentUser } = useApp();
+  const user = currentUser;
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   const fetchNotifications = async () => {
-    if (!user?.id) return;
+    const userId = user?.id || user?._id;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     try {
-      const data = await getNotifications(user.id);
+      const data = await getNotifications(userId);
       setNotifications(Array.isArray(data) ? data.map((n: any) => ({
         id: n._id,
         type: n.type || 'info',
@@ -34,7 +39,7 @@ export const NotificationsPage = () => {
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [user?.id, user?._id]);
 
   function getRelativeTime(dateStr: string): string {
     if (!dateStr) return '-';
@@ -61,11 +66,13 @@ export const NotificationsPage = () => {
   };
 
   const handleMarkAllRead = async () => {
+    const userId = user?.id || user?._id;
+    if (!userId) return;
     try {
-      await Promise.all(notifications.filter(n => !n.read).map(n => markNotificationRead(n.id)));
+      await markAllNotificationsRead(userId);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
-      console.error('Error marking all read:', err);
+      console.error('Error marking all notifications read:', err);
     }
   };
 
@@ -73,8 +80,15 @@ export const NotificationsPage = () => {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
   };
 
-  const handleClearAll = () => {
-    setNotifications([]);
+  const handleClearAll = async () => {
+    const userId = user?.id || user?._id;
+    if (!userId) return;
+    try {
+      await clearAllNotifications(userId);
+      setNotifications([]);
+    } catch (err) {
+      console.error('Error clearing notifications:', err);
+    }
   };
 
   const getTypeIcon = (type: string) => {

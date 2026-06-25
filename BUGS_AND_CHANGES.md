@@ -531,6 +531,30 @@ Full build analysis revealed two issues causing the application to render a blan
 
 ---
 
+### BUG-048 — Notifications "Clear All" Only Clears Local State
+**File:** `frontend/src/pages/NotificationsPage.tsx`, `backend/routes/apiRoutes.js`
+**Root Cause:** The `handleClearAll` and `handleMarkAllRead` buttons in the employee notifications portal only updated React state array. Because there was no corresponding API call, notifications would reappear upon a page refresh or when the background polling interval fired.
+**Fix:** Added `DELETE /notifications/clearAll/:userId` and `PUT /notifications/markAllRead/:userId` endpoints in the backend. Updated `api.ts` to export these endpoints and wired them into the `NotificationsPage` click handlers for robust persistence.
+**Status:** FIXED
+
+---
+
+### BUG-049 — Admin Notifications Read Rate Hardcoded to 98.5%
+**File:** `frontend/src/pages/admin/AdminNotificationsPage.tsx`, `backend/routes/apiRoutes.js`
+**Root Cause:** The broadcast notifications dashboard for administrators relied on a statically mocked `sentNotifications` array and hardcoded metrics (`98.5%` Read Rate, 1247 Recipients), failing to reflect actual broadcast activity or real-time engagement.
+**Fix:** Created an aggregation pipeline endpoint `GET /notifications/stats/broadcast` to group `Notification` documents by title/message and dynamically calculate read percentages. The frontend dashboard now fetches and displays this live data via background polling.
+**Status:** FIXED
+
+---
+
+### BUG-050 — Lack of Multimedia Support for Administrator Broadcasts
+**File:** `backend/models/Notification.js`, `frontend/src/pages/admin/AdminNotificationsPage.tsx`, `frontend/src/pages/superadmin/SuperAdminNotificationsPage.tsx`
+**Root Cause:** The admin broadcast forms only permitted plain-text `title` and `message` fields, lacking support for the requested images and PDFs required for company-wide bulletins.
+**Fix:** Expanded the Mongoose `Notification` schema with an `attachment` field. Updated both Admin and SuperAdmin broadcast modals to include an Image/PDF file picker, which automatically encodes the selected file to a base64 string and bundles it with the POST payload to the backend.
+**Status:** FIXED
+
+---
+
 ## Summary — Remaining Known Stubs (Low Priority, Non-Breaking)
 
 The following buttons exist in the UI but are intentional view-only placeholders. They do not cause errors and are acceptable for the current build:

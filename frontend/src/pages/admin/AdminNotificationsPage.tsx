@@ -30,6 +30,7 @@ interface SentNotification {
   sentTo: string;
   sentOn: string;
   recipients: number;
+  readRate?: string;
 }
 
 export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPageProps) => {
@@ -39,51 +40,52 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
   const [notificationType, setNotificationType] = useState('info');
   const [targetAudience, setTargetAudience] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [attachmentBase64, setAttachmentBase64] = useState<string>('');
+  const [attachmentName, setAttachmentName] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{success: boolean; message: string} | null>(null);
 
   // Filter state: 'all' | 'today' | 'week'
   const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week'>('all');
 
-  // Sent notifications state — starts with samples, new broadcasts are prepended
-  const [sentNotifications, setSentNotifications] = useState<SentNotification[]>([
-    {
-      id: '1',
-      title: 'Holiday Announcement',
-      message: 'Company will remain closed on Dec 25th for Christmas',
-      type: 'info',
-      sentTo: 'All Employees',
-      sentOn: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      recipients: 1247
-    },
-    {
-      id: '2',
-      title: 'Urgent: Safety Training',
-      message: 'Mandatory safety training session scheduled for all production staff',
-      type: 'warning',
-      sentTo: 'Production Department',
-      sentOn: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      recipients: 450
-    },
-    {
-      id: '3',
-      title: 'Payroll Update',
-      message: 'December salary will be credited on 28th Dec instead of 30th',
-      type: 'success',
-      sentTo: 'All Employees',
-      sentOn: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-      recipients: 1247
-    },
-    {
-      id: '4',
-      title: 'New Policy Released',
-      message: 'Updated Work from Home policy is now available in the policy section',
-      type: 'info',
-      sentTo: 'All Employees',
-      sentOn: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-      recipients: 1247
+  // Sent notifications state — fetched dynamically from backend
+  const [sentNotifications, setSentNotifications] = useState<SentNotification[]>([]);
+  const [overallReadRate, setOverallReadRate] = useState('0%');
+
+  const fetchStats = async () => {
+    try {
+      const { getBroadcastStats } = await import('../../services/api');
+      const data = await getBroadcastStats();
+      if (Array.isArray(data)) {
+        const mapped = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          message: d.message,
+          type: 'info',
+          sentTo: d.audience || 'All Employees',
+          sentOn: d.date,
+          recipients: d.totalCount,
+          readRate: d.readRate
+        }));
+        setSentNotifications(mapped);
+
+        // Compute overall read rate
+        const totalSent = data.reduce((sum: number, item: any) => sum + item.totalCount, 0);
+        const totalRead = data.reduce((sum: number, item: any) => sum + item.readCount, 0);
+        if (totalSent > 0) {
+          setOverallReadRate(`${Math.round((totalRead / totalSent) * 100)}%`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch broadcast stats:', err);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 10000); // 10s realtime polling
+    return () => clearInterval(interval);
+  }, []);
 
   const departments = [
     'Production',
@@ -143,7 +145,8 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
         message: notificationMessage.trim(),
         audience: targetAudience === 'all' ? 'All Employees' : 'By Department',
         department: targetAudience === 'department' ? selectedDepartment : undefined,
-        type: notificationType
+        type: notificationType,
+        attachment: attachmentBase64 || undefined
       };
 
       const result = await broadcastNotification(payload);
@@ -247,8 +250,8 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
           <div className="flex items-center justify-between mb-2">
             <Eye size={24} className="text-purple-600" />
           </div>
-          <p className="text-2xl font-bold text-[#1B254B]">98.5%</p>
-          <p className="text-xs text-gray-500">Read Rate</p>
+          <p className="text-2xl font-bold text-[#1B254B]">{overallReadRate}</p>
+          <p className="text-xs text-gray-500">Overall Read Rate</p>
         </div>
         <div className="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
@@ -339,6 +342,12 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
                         <Users size={12} />
                         {notification.recipients.toLocaleString('en-IN')} Recipients
                       </span>
+                      {notification.readRate && (
+                        <span className="text-xs text-green-600 flex items-center gap-1 font-bold">
+                          <Eye size={12} />
+                          {notification.readRate} Read
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Calendar size={12} />
                         {formatSentOn(notification.sentOn)}
@@ -447,6 +456,44 @@ export const AdminNotificationsPage = ({ onNavigate }: AdminNotificationsPagePro
                   placeholder="Enter notification message..."
                   className="w-full h-32 p-3 border border-gray-200 rounded-xl resize-none focus:border-[#0B4DA2] focus:ring-2 focus:ring-blue-100 outline-none"
                 />
+              </div>
+
+              {/* Attachment */}
+              <div>
+                <label className="block text-sm font-bold text-[#1B254B] mb-2">Attachment (Image/PDF)</label>
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer bg-gray-50 border border-gray-200 text-[#1B254B] px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors inline-block">
+                    <span>Choose File</span>
+                    <input 
+                      type="file" 
+                      accept="image/*,application/pdf"
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setAttachmentBase64(reader.result as string);
+                            setAttachmentName(file.name);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {attachmentName || 'Optional: Attach an image or PDF document.'}
+                  </span>
+                  {attachmentName && (
+                    <button 
+                      onClick={() => { setAttachmentBase64(''); setAttachmentName(''); }}
+                      className="text-red-500 hover:text-red-700 p-1"
+                      title="Remove Attachment"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Target Audience */}

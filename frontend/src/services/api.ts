@@ -171,6 +171,11 @@ export const createAnnouncement = (data: any) =>
 export const getNotifications = (userId: string) => apiFetch(`/notifications/${userId}`);
 export const markNotificationRead = (id: string) =>
     apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
+export const markAllNotificationsRead = (userId: string) =>
+    apiFetch(`/notifications/markAllRead/${userId}`, { method: 'PUT' });
+export const clearAllNotifications = (userId: string) =>
+    apiFetch(`/notifications/clearAll/${userId}`, { method: 'DELETE' });
+export const getBroadcastStats = () => apiFetch('/notifications/stats/broadcast');
 
 // ═══════════════════════════════════════
 // DEPARTMENTS

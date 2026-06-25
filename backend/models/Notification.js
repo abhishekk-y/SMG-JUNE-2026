@@ -31,7 +31,8 @@ const notificationSchema = new mongoose.Schema({
         default: 'Other'
     },
     isRead: { type: Boolean, default: false },
-    link: { type: String }
+    link: { type: String },
+    attachment: { type: String }
 }, { timestamps: true });
 
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
